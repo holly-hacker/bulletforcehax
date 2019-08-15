@@ -1,16 +1,5 @@
-import 'package:bullet_force_hax/bullet_force_hax.dart';
-import 'package:test/test.dart';
+import 'protocol_reader_test.dart' as protocol_tests;
 
 void main() {
-  group('A group of tests', () {
-    MyClass answer;
-
-    setUp(() {
-      answer = MyClass();
-    });
-
-    test('Test Test', () {
-      expect(answer.theAnwser, 42);
-    });
-  });
+  protocol_tests.main();
 }

@@ -1,3 +1,1 @@
-class MyClass {
-  num get theAnwser => 42;
-}
+// TODO: expose
