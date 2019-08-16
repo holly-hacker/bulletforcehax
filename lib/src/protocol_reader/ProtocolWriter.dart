@@ -3,9 +3,15 @@ import 'dart:typed_data';
 import 'package:buffer/buffer.dart';
 import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/Serializable.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 
 class ProtocolWriter extends ByteDataWriter {
   ProtocolWriter() : super(endian: Endian.big);
+
+  writePacket(PacketWithPayload packet) {
+    writeUint8(0xF3);
+    writeValue(packet);
+  }
 
   writeValue(Object s, [bool writeType = true]) {
     if (s == null) {
@@ -20,7 +26,7 @@ class ProtocolWriter extends ByteDataWriter {
       }
       writeStringArray(s);
     }
-    else if (s is Serializable) { // handles integers, floats, CustomData, Array
+    else if (s is Serializable) { // handles integers, floats, CustomData, Array, packets w/o 0xF3 prefix
       if (writeType) {
         s..writeType(this);
       }
@@ -92,5 +98,13 @@ class ProtocolWriter extends ByteDataWriter {
     var bytes = s.codeUnits;  // TODO: this only works for ASCII text!
     writeUint16(bytes.length);
     write(bytes);
+  }
+
+  writeParameterTable(Map<int, Object> params) {
+    writeUint16(params.length);
+    for (var key in params.keys) {
+      writeUint8(key);
+      writeValue(params[key]);
+    }
   }
 }
