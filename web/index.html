@@ -39,14 +39,21 @@
             if (!this.isRecvHooked && this.onmessage) {
                 this.origRecv = this.onmessage;
                 this.onmessage = function (msg) {
-                    if (msg.data instanceof ArrayBuffer)
-                        cbRecv(msg.data);
+                    if (msg.data instanceof ArrayBuffer) {
+                        msg = new MessageEvent('message', {
+                            data: cbRecv(msg.data),
+                            lastEventId: msg.lastEventId,
+                            origin: msg.origin,
+                            ports: msg.ports,
+                            source: msg.source,
+                        });
+                    }
                     return _this.origRecv(msg);
                 };
                 this.isRecvHooked = true;
             }
             if (data instanceof ArrayBuffer)
-                cbSend(data);
+                data = cbSend(data);
             return this.origSend(data);
         }
     </script>
