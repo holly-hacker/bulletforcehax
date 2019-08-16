@@ -21,7 +21,6 @@ void main() {
     // TODO: OperationResponse test
     // TODO: OperationRequest test
     // TODO: Array test
-    // TODO: ObjectArray test
 
     test('can write bool', () {
       var writer1 = ProtocolWriter()..writeValue(false);
@@ -112,6 +111,14 @@ void main() {
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0]));
+    });
+
+    test('can read ObjectArray', () {
+      var writer = ProtocolWriter()
+        ..writeValue(['abc', null, SizedInt.short(0x123)]);
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([122, 0, 3, 115, 0, 3, 0x61, 0x62, 0x63, 42, 107, 0x01, 0x23]));
     });
 
     test('can write hashtable', () {

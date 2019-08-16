@@ -98,9 +98,9 @@ class ProtocolReader extends ByteDataReader {
     return list;
   }
 
-  Set<Object> readObjectArray() {
+  List<Object> readObjectArray() {
     var len = readUint16();
-    var set = Set<Object>();
+    var set = List<Object>();
     for (int i = 0; i < len; i++) {
       set.add(readValue());
     }

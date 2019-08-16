@@ -21,7 +21,6 @@ void main() {
     // TODO: OperationResponse test
     // TODO: OperationRequest test
     // TODO: Array test
-    // TODO: ObjectArray test
 
     test('can read bool', () {
       var t1 = ProtocolReader(Uint8List.fromList([0x6f, 0x00])).readValue();
@@ -140,6 +139,25 @@ void main() {
         expect(t.length, 2);
         expect(t[0], 'abc');
         expect(t[1], '');
+      }
+    });
+
+    test('can read ObjectArray', () {
+      var reader = ProtocolReader(Uint8List.fromList([122, 0, 3, 115, 0, 3, 0x61, 0x62, 0x63, 42, 107, 0x01, 0x23]));
+      var t = reader.readValue();
+
+      expect(t is List<Object>, isTrue);
+      if (t is List<Object>) {
+        expect(t.length, 3);
+        expect(t[0], 'abc');
+        expect(t[1], null);
+
+        var elem2 = t[2];
+        expect(elem2 is SizedInt, isTrue);
+        if (elem2 is SizedInt) {
+          expect(elem2.size, 2);
+          expect(elem2.value, 0x123);
+        }
       }
     });
 

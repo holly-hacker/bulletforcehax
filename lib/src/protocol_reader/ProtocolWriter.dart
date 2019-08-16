@@ -51,6 +51,7 @@ class ProtocolWriter extends ByteDataWriter {
       writeInt32(s.length);
       write(s);
     }
+    /*
     else if (s is List<Object>) {
       writeUint8(DataType.Array);
       writeInt16(s.length);
@@ -58,7 +59,8 @@ class ProtocolWriter extends ByteDataWriter {
       // TODO: List<Object> (Array)
       throw UnimplementedError();
     }
-    else if (s is Set<Object>) {
+     */
+    else if (s is List<Object>) {
       writeUint8(DataType.ObjectArray);
       writeInt16(s.length);
       for (var o in s) {
