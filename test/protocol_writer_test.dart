@@ -16,14 +16,13 @@ void main() {
       expect(buffer, Uint8List.fromList([0x2a]));
     });
 
-    // TODO: add unicode test
-    test('can write strings', () {
-      var writer = ProtocolWriter()
-        ..writeValue('abc');
-      var buffer = writer.toBytes();
-
-      expect(buffer, Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
-    });
+    // TODO: Dictionary test
+    // TODO: StringArray test
+    // TODO: EventData test
+    // TODO: OperationResponse test
+    // TODO: OperationRequest test
+    // TODO: Array test
+    // TODO: ObjectArray test
 
     test('can write bool', () {
       var writer1 = ProtocolWriter()..writeValue(false);
@@ -83,20 +82,13 @@ void main() {
       expect(buffer, Uint8List.fromList([0x64, 0x40, 0x2a, 0xbd, 0x70, 0xa3, 0xd7, 0x0a, 0x3d]));
     });
 
-    test('can write hashtable', () {
+    // TODO: add unicode test
+    test('can write strings', () {
       var writer = ProtocolWriter()
-        ..writeValue({SizedInt.byte(0xFF): null, 'abc': true});
+        ..writeValue('abc');
       var buffer = writer.toBytes();
 
-      expect(buffer, Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
-    });
-
-    test('can write custom data', () {
-      var writer = ProtocolWriter()
-        ..writeValue(CustomData(42, Uint8List.fromList([0xDE, 0xAD, 0xBE, 0xEF])));
-      var buffer = writer.toBytes();
-
-      expect(buffer, Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
+      expect(buffer, Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
     });
 
     test('can write byte[]', () {
@@ -113,6 +105,22 @@ void main() {
       var buffer = writer.toBytes();
 
       expect(buffer, Uint32List.fromList([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]));
+    });
+
+    test('can write hashtable', () {
+      var writer = ProtocolWriter()
+        ..writeValue({SizedInt.byte(0xFF): null, 'abc': true});
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
+    });
+
+    test('can write custom data', () {
+      var writer = ProtocolWriter()
+        ..writeValue(CustomData(42, Uint8List.fromList([0xDE, 0xAD, 0xBE, 0xEF])));
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
     });
   });
 }

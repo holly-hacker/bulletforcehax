@@ -17,12 +17,12 @@ class ProtocolReader extends ByteDataReader {
 
     switch (type) {
       case DataType.NullValue: return null;
-      case DataType.Dictionary: break;
-      case DataType.StringArray: break;
+      case DataType.Dictionary: throw UnimplementedError('Unimplemented data type $type (Dictionary)');
+      case DataType.StringArray: throw UnimplementedError('Unimplemented data type $type (StringArray)');
       case DataType.Byte: return SizedInt.read(this, 1);
       case DataType.Custom: return CustomData.read(this);
       case DataType.Double: return SizedFloat.read(this, 8);
-      case DataType.EventData: break;
+      case DataType.EventData: throw UnimplementedError('Unimplemented data type $type (EventData)');
       case DataType.Float: return SizedFloat.read(this, 4);
       case DataType.Hashtable: return readHashTable();
       case DataType.Integer: return SizedInt.read(this, 4);
@@ -30,15 +30,15 @@ class ProtocolReader extends ByteDataReader {
       case DataType.Long: return SizedInt.read(this, 8);
       case DataType.IntegerArray: return readIntArray();
       case DataType.Bool: return readUint8() != 0;
-      case DataType.OperationResponse: break;
-      case DataType.OperationRequest: break;
+      case DataType.OperationResponse: throw UnimplementedError('Unimplemented data type $type (OperationResponse)');
+      case DataType.OperationRequest: throw UnimplementedError('Unimplemented data type $type (OperationRequest)');
       case DataType.String: return readString();
       case DataType.ByteArray: return readByteArray();
       case DataType.Array: return readValueArray();
       case DataType.ObjectArray: return readObjectArray();
     }
 
-    throw UnimplementedError('Unimplemented data type $type');
+    throw UnsupportedError('Unknown data type $type');
   }
 
   PacketWithPayload readPacket() {

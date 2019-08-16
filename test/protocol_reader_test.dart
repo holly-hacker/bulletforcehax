@@ -16,14 +16,13 @@ void main() {
       expect(t, null);
     });
 
-    // TODO: add unicode test
-    test('can read strings', () {
-      var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
-      var t = reader.readValue();
-
-      expect(t.runtimeType, String);
-      expect(t, "abc");
-    });
+    // TODO: Dictionary test
+    // TODO: StringArray test
+    // TODO: EventData test
+    // TODO: OperationResponse test
+    // TODO: OperationRequest test
+    // TODO: Array test
+    // TODO: ObjectArray test
 
     test('can read bool', () {
       var t1 = ProtocolReader(Uint8List.fromList([0x6f, 0x00])).readValue();
@@ -102,28 +101,13 @@ void main() {
       }
     });
 
-    test('can read hashtable', () {
-      var reader = ProtocolReader(Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
+    // TODO: unicode test
+    test('can read strings', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
       var t = reader.readValue();
 
-      expect(t is Map<Object, Object>, isTrue); // cannot use runtimeType?
-      if (t is Map<Object, Object>) {
-        expect(t.length, 2);
-        expect(t[SizedInt.byte(0xFF)], null);
-        expect(t['abc'], true);
-      }
-    });
-
-    test('can read custom data', () {
-      var reader = ProtocolReader(Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
-      var t = reader.readValue();
-
-      expect(t.runtimeType, CustomData);
-      if (t is CustomData) {
-        expect(t.typeCode, 42);
-        expect(t.data.length, 4);
-        expect(t.data, [0xDE, 0xAD, 0xBE, 0xEF]);
-      }
+      expect(t.runtimeType, String);
+      expect(t, "abc");
     });
 
     test('can read byte[]', () {
@@ -145,6 +129,30 @@ void main() {
       if (t is Int32List) {
         expect(t.length, 2);
         expect(t, [-559038737, -889275714]);
+      }
+    });
+
+    test('can read hashtable', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
+      var t = reader.readValue();
+
+      expect(t is Map<Object, Object>, isTrue); // cannot use runtimeType?
+      if (t is Map<Object, Object>) {
+        expect(t.length, 2);
+        expect(t[SizedInt.byte(0xFF)], null);
+        expect(t['abc'], true);
+      }
+    });
+
+    test('can read custom data', () {
+      var reader = ProtocolReader(Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, CustomData);
+      if (t is CustomData) {
+        expect(t.typeCode, 42);
+        expect(t.data.length, 4);
+        expect(t.data, [0xDE, 0xAD, 0xBE, 0xEF]);
       }
     });
   });
