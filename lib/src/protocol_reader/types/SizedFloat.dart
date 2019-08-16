@@ -1,6 +1,9 @@
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
+import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
+import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/Serializable.dart';
 
-class SizedFloat {
+class SizedFloat implements Serializable {
   double value;
   int size;
 
@@ -17,6 +20,22 @@ class SizedFloat {
       case 8: value = reader.readFloat64(); break;
     }
     _checkSize();
+  }
+
+  void writeType(ProtocolWriter writer) {
+    switch(size) {
+      case 4: writer.writeUint8(DataType.Float); break;
+      case 8: writer.writeUint8(DataType.Double); break;
+      default: throw Exception("Tried to writetype of SizedFloat with size $size. This should never happen");
+    }
+  }
+
+  void writeValue(ProtocolWriter writer) {
+    switch(size) {
+      case 4: writer.writeFloat32(value); break;
+      case 8: writer.writeFloat64(value); break;
+      default: throw Exception("Tried to write SizedFloat with size $size. This should never happen");
+    }
   }
 
   String toString() => 'float${size*8} $value';

@@ -16,6 +16,7 @@ void main() {
       expect(t, null);
     });
 
+    // TODO: add unicode test
     test('can read strings', () {
       var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
       var t = reader.readValue();

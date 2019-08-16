@@ -1,6 +1,9 @@
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
+import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
+import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/Serializable.dart';
 
-class SizedInt {
+class SizedInt implements Serializable {
   int value;
   int size;
 
@@ -21,6 +24,26 @@ class SizedInt {
       case 8: value = reader.readInt64(); break;
     }
     _checkSize();
+  }
+
+  void writeType(ProtocolWriter writer) {
+    switch(size) {
+      case 1: writer.writeUint8(DataType.Byte); break;
+      case 2: writer.writeUint8(DataType.Short); break;
+      case 4: writer.writeUint8(DataType.Integer); break;
+      case 8: writer.writeUint8(DataType.Long); break;
+      default: throw Exception("Tried to write type of SizedInt with size $size. This should never happen");
+    }
+  }
+
+  void writeValue(ProtocolWriter writer) {
+    switch(size) {
+      case 1: writer.writeUint8(value); break;
+      case 2: writer.writeInt16(value); break;
+      case 4: writer.writeInt32(value); break;
+      case 8: writer.writeInt64(value); break;
+      default: throw Exception("Tried to write SizedInt with size $size. This should never happen");
+    }
   }
 
   String toString() => 'int${size*8} $value';

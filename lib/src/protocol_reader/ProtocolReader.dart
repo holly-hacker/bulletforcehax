@@ -8,12 +8,8 @@ import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 
 class ProtocolReader extends ByteDataReader {
-  int get length => _buffer.length;
-
-  Uint8List _buffer;
-
-  ProtocolReader(this._buffer) : super(endian: Endian.big) {
-    add(_buffer);
+  ProtocolReader(Uint8List buffer) : super(endian: Endian.big) {
+    add(buffer);
   }
 
   Object readValue([int type]) {
@@ -42,7 +38,7 @@ class ProtocolReader extends ByteDataReader {
       case DataType.ObjectArray: return readObjectArray();
     }
 
-    throw Exception('Unimplemented data type $type');
+    throw UnimplementedError('Unimplemented data type $type');
   }
 
   PacketWithPayload readPacket() {
@@ -63,7 +59,7 @@ class ProtocolReader extends ByteDataReader {
       case PacketType.RawMessage: break;
     }
 
-    throw Exception('Unimplemented packet type $type');
+    throw UnimplementedError('Unimplemented packet type $type');
   }
 
   String readString() => String.fromCharCodes(read(readUint16()));
