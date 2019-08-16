@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
 import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 
@@ -22,20 +24,20 @@ class ProtocolReader extends ByteDataReader {
       case DataType.Dictionary: break;
       case DataType.StringArray: break;
       case DataType.Byte: return SizedInt.read(this, 1);
-      case DataType.Custom: break;
-      case DataType.Double: break;
+      case DataType.Custom: return CustomData.read(this);
+      case DataType.Double: return SizedFloat.read(this, 8);
       case DataType.EventData: break;
-      case DataType.Float: break;
+      case DataType.Float: return SizedFloat.read(this, 4);
       case DataType.Hashtable: return readHashTable();
       case DataType.Integer: return SizedInt.read(this, 4);
       case DataType.Short: return SizedInt.read(this, 2);
       case DataType.Long: return SizedInt.read(this, 8);
-      case DataType.IntegerArray: break;
-      case DataType.Bool: break;
+      case DataType.IntegerArray: return readIntArray();
+      case DataType.Bool: return readUint8() != 0;
       case DataType.OperationResponse: break;
       case DataType.OperationRequest: break;
       case DataType.String: return readString();
-      case DataType.ByteArray: break;
+      case DataType.ByteArray: return readByteArray();
       case DataType.Array: break;
       case DataType.ObjectArray: break;
     }
@@ -65,6 +67,17 @@ class ProtocolReader extends ByteDataReader {
   }
 
   String readString() => String.fromCharCodes(read(readUint16()));
+
+  Uint8List readByteArray() => read(readInt32());
+
+  Int32List readIntArray() {
+    var len = readInt32();
+    var list = Int32List(len);
+    for (int i = 0; i < len; i++) {
+      list[i] = readInt32();
+    }
+    return list;
+  }
 
   Map<Object, Object> readHashTable() {
     Map<Object, Object> value = {};

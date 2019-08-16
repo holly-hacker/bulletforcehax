@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 import 'package:test/test.dart';
@@ -18,12 +20,135 @@ void main() {
       var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
       var t = reader.readValue();
 
-      expect(t is String, isTrue);
+      expect(t.runtimeType, String);
       expect(t, "abc");
+    });
+
+    test('can read bool', () {
+      var t1 = ProtocolReader(Uint8List.fromList([0x6f, 0x00])).readValue();
+      var t2 = ProtocolReader(Uint8List.fromList([0x6f, 0x01])).readValue();
+
+      expect(t1.runtimeType, bool);
+      expect(t1, false);
+      expect(t2.runtimeType, bool);
+      expect(t2, true);
+
+    });
+
+    test('can read u8', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x62, 0x90]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedInt);
+      if (t is SizedInt) {
+        expect(t.value, 0x90);
+        expect(t.size, 1);
+      }
+    });
+
+    test('can read s16', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x6b, 0xFA, 0xC7]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedInt);
+      if (t is SizedInt) {
+        expect(t.value, -1337);
+        expect(t.size, 2);
+      }
+    });
+
+    test('can read s32', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x69, 0xDE, 0xAD, 0xBE, 0xEF]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedInt);
+      if (t is SizedInt) {
+        expect(t.value, -559038737);
+        expect(t.size, 4);
+      }
+    });
+
+    test('can read s64', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x6c, 0xCA, 0x11, 0xAB, 0x1E, 0xCA, 0xFE, 0xBA, 0xBE]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedInt);
+      if (t is SizedInt) {
+        expect(t.value, -3886136854700967234);
+        expect(t.size, 8);
+      }
+    });
+
+    test('can read f32', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x66, 0x42, 0x28, 0x00, 0x00]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedFloat);
+      if (t is SizedFloat) {
+        expect(t.value, 42);
+        expect(t.size, 4);
+      }
+    });
+
+    test('can read f64', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x64, 0x40, 0x2a, 0xbd, 0x70, 0xa3, 0xd7, 0x0a, 0x3d]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, SizedFloat);
+      if (t is SizedFloat) {
+        expect(t.value, 13.37);
+        expect(t.size, 8);
+      }
+    });
+
+    test('can read hashtable', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
+      var t = reader.readValue();
+
+      expect(t is Map<Object, Object>, isTrue); // cannot use runtimeType?
+      if (t is Map<Object, Object>) {
+        expect(t.length, 2);
+        expect(t[SizedInt.byte(0xFF)], null);
+        expect(t['abc'], true);
+      }
+    });
+
+    test('can read custom data', () {
+      var reader = ProtocolReader(Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, CustomData);
+      if (t is CustomData) {
+        expect(t.typeCode, 42);
+        expect(t.data.length, 4);
+        expect(t.data, [0xDE, 0xAD, 0xBE, 0xEF]);
+      }
+    });
+
+    test('can read byte[]', () {
+      var reader = ProtocolReader(Uint8List.fromList([120, 0, 0, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
+      var t = reader.readValue();
+
+      expect(t is Uint8List, isTrue);
+      if (t is Uint8List) {
+        expect(t.length, 4);
+        expect(t, [0xDE, 0xAD, 0xBE, 0xEF]);
+      }
+    });
+
+    test('can read int[]', () {
+      var reader = ProtocolReader(Uint8List.fromList([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]));
+      var t = reader.readValue();
+
+      expect(t is Int32List, isTrue);
+      if (t is Int32List) {
+        expect(t.length, 2);
+        expect(t, [-559038737, -889275714]);
+      }
     });
   });
 
-  group('reading basic packets', () {
+  group('reading packets', () {
     test('packet 0x02: OperationRequest', () {
       var reader = ProtocolReader(Uint8List.fromList([0xf3, 0x02, 0xe5, 0x00, 0x00]));
       var t = reader.readPacket();
