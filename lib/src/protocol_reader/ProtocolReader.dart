@@ -16,8 +16,8 @@ class ProtocolReader extends ByteDataReader {
     add(_buffer);
   }
 
-  Object readValue() {
-    var type = readUint8();
+  Object readValue([int type]) {
+    type ??= readUint8();
 
     switch (type) {
       case DataType.NullValue: return null;
@@ -38,8 +38,8 @@ class ProtocolReader extends ByteDataReader {
       case DataType.OperationRequest: break;
       case DataType.String: return readString();
       case DataType.ByteArray: return readByteArray();
-      case DataType.Array: break;
-      case DataType.ObjectArray: break;
+      case DataType.Array: return readValueArray();
+      case DataType.ObjectArray: return readObjectArray();
     }
 
     throw Exception('Unimplemented data type $type');
@@ -77,6 +77,25 @@ class ProtocolReader extends ByteDataReader {
       list[i] = readInt32();
     }
     return list;
+  }
+
+  List<Object> readValueArray() {
+    var len = readUint16();
+    var type = readUint8();
+    var list = List<Object>(len);
+    for (int i = 0; i < len; i++) {
+      list[i] = readValue(type);
+    }
+    return list;
+  }
+
+  Set<Object> readObjectArray() {
+    var len = readUint16();
+    var set = Set<Object>();
+    for (int i = 0; i < len; i++) {
+      set.add(readValue());
+    }
+    return set;
   }
 
   Map<Object, Object> readHashTable() {
