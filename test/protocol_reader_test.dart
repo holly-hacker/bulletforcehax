@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/Array.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
@@ -20,7 +21,6 @@ void main() {
     // TODO: EventData test
     // TODO: OperationResponse test
     // TODO: OperationRequest test
-    // TODO: Array test
 
     test('can read bool', () {
       var t1 = ProtocolReader(Uint8List.fromList([0x6f, 0x00])).readValue();
@@ -139,6 +139,20 @@ void main() {
         expect(t.length, 2);
         expect(t[0], 'abc');
         expect(t[1], '');
+      }
+    });
+
+    test('can read Array', () {
+      var reader = ProtocolReader(Uint8List.fromList([121, 0, 3, 111, 1, 0, 1]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, ProtocolArray);
+      if (t is ProtocolArray) {
+        var d = t.data;
+        expect(d.length, 3);
+        expect(d[0], true);
+        expect(d[1], false);
+        expect(d[2], true);
       }
     });
 

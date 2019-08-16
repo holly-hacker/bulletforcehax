@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
 import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/Array.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
@@ -34,7 +35,7 @@ class ProtocolReader extends ByteDataReader {
       case DataType.OperationRequest: throw UnimplementedError('Unimplemented data type $type (OperationRequest)');
       case DataType.String: return readString();
       case DataType.ByteArray: return readByteArray();
-      case DataType.Array: return readValueArray();
+      case DataType.Array: return ProtocolArray.read(this);
       case DataType.ObjectArray: return readObjectArray();
     }
 
@@ -84,16 +85,6 @@ class ProtocolReader extends ByteDataReader {
     var list = List<String>(len);
     for (int i = 0; i < len; i++) {
       list[i] = readString();
-    }
-    return list;
-  }
-
-  List<Object> readValueArray() {
-    var len = readUint16();
-    var type = readUint8();
-    var list = List<Object>(len);
-    for (int i = 0; i < len; i++) {
-      list[i] = readValue(type);
     }
     return list;
   }

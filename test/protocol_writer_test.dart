@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
+import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/Array.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
@@ -20,7 +22,6 @@ void main() {
     // TODO: EventData test
     // TODO: OperationResponse test
     // TODO: OperationRequest test
-    // TODO: Array test
 
     test('can write bool', () {
       var writer1 = ProtocolWriter()..writeValue(false);
@@ -111,6 +112,14 @@ void main() {
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0]));
+    });
+
+    test('can read Array', () {
+      var writer = ProtocolWriter()
+        ..writeValue(ProtocolArray(DataType.Bool, [true, false, true]));
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([121, 0, 3, 111, 1, 0, 1]));
     });
 
     test('can read ObjectArray', () {
