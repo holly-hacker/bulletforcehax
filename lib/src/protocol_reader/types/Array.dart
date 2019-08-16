@@ -30,4 +30,6 @@ class ProtocolArray implements Serializable {
       writer.writeValue(obj, false);
     }
   }
+
+  String toString() => 'ProtocolArray $innerDataType: ${data.toString()}';
 }
