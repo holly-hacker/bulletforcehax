@@ -17,7 +17,6 @@ void main() {
     });
 
     // TODO: Dictionary test
-    // TODO: StringArray test
     // TODO: EventData test
     // TODO: OperationResponse test
     // TODO: OperationRequest test
@@ -104,7 +103,15 @@ void main() {
         ..writeValue(Int32List.fromList([-559038737, -889275714]));
       var buffer = writer.toBytes();
 
-      expect(buffer, Uint32List.fromList([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]));
+      expect(buffer, Uint8List.fromList([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]));
+    });
+
+    test('can read string[]', () {
+      var writer = ProtocolWriter()
+        ..writeValue(['abc', '']);
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0]));
     });
 
     test('can write hashtable', () {

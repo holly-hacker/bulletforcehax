@@ -17,7 +17,6 @@ void main() {
     });
 
     // TODO: Dictionary test
-    // TODO: StringArray test
     // TODO: EventData test
     // TODO: OperationResponse test
     // TODO: OperationRequest test
@@ -129,6 +128,18 @@ void main() {
       if (t is Int32List) {
         expect(t.length, 2);
         expect(t, [-559038737, -889275714]);
+      }
+    });
+
+    test('can read string[]', () {
+      var reader = ProtocolReader(Uint8List.fromList([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0]));
+      var t = reader.readValue();
+
+      expect(t is List<String>, isTrue);
+      if (t is List<String>) {
+        expect(t.length, 2);
+        expect(t[0], 'abc');
+        expect(t[1], '');
       }
     });
 

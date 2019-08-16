@@ -12,7 +12,10 @@ class ProtocolWriter extends ByteDataWriter {
       writeUint8(DataType.NullValue);
     }
     // TODO: Dictionary
-    // TODO: StringArray
+    else if (s is List<String>) { // needs to be checked before List<Object>
+      writeUint8(DataType.StringArray);
+      writeStringArray(s);
+    }
     else if (s is Serializable) { // handles integers, floats, CustomData
       s..writeType(this)
         ..writeValue(this);
@@ -41,9 +44,7 @@ class ProtocolWriter extends ByteDataWriter {
     // TODO: OperationRequest
     else if (s is String) {
       writeUint8(DataType.String);
-      var bytes = s.codeUnits;  // TODO: this only works for ASCII text!
-      writeUint16(bytes.length);
-      write(bytes);
+      writeString(s);
     }
     else if (s is Uint8List) {
       writeUint8(DataType.ByteArray);
@@ -67,5 +68,18 @@ class ProtocolWriter extends ByteDataWriter {
     else {
       throw UnsupportedError("Cannot serialize '$s' (of type ${s.runtimeType})");
     }
+  }
+
+  writeStringArray(List<String> strings) {
+    writeInt16(strings.length);
+    for (var s in strings) {
+      writeString(s);
+    }
+  }
+
+  writeString(String s) {
+    var bytes = s.codeUnits;  // TODO: this only works for ASCII text!
+    writeUint16(bytes.length);
+    write(bytes);
   }
 }

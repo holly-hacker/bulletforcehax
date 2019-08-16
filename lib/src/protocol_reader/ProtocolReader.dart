@@ -18,7 +18,7 @@ class ProtocolReader extends ByteDataReader {
     switch (type) {
       case DataType.NullValue: return null;
       case DataType.Dictionary: throw UnimplementedError('Unimplemented data type $type (Dictionary)');
-      case DataType.StringArray: throw UnimplementedError('Unimplemented data type $type (StringArray)');
+      case DataType.StringArray: return readStringArray();
       case DataType.Byte: return SizedInt.read(this, 1);
       case DataType.Custom: return CustomData.read(this);
       case DataType.Double: return SizedFloat.read(this, 8);
@@ -62,7 +62,11 @@ class ProtocolReader extends ByteDataReader {
     throw UnimplementedError('Unimplemented packet type $type');
   }
 
-  String readString() => String.fromCharCodes(read(readUint16()));
+  String readString() {
+    var len = readUint16();
+    if (len == 0) return '';
+    return String.fromCharCodes(read(len));
+  }
 
   Uint8List readByteArray() => read(readInt32());
 
@@ -71,6 +75,15 @@ class ProtocolReader extends ByteDataReader {
     var list = Int32List(len);
     for (int i = 0; i < len; i++) {
       list[i] = readInt32();
+    }
+    return list;
+  }
+
+  List<String> readStringArray() {
+    var len = readInt16();
+    var list = List<String>(len);
+    for (int i = 0; i < len; i++) {
+      list[i] = readString();
     }
     return list;
   }
