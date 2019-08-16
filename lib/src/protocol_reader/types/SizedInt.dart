@@ -23,6 +23,8 @@ class SizedInt {
     _checkSize();
   }
 
+  String toString() => 'int${size*8} $value';
+
   void _checkSize() {
     if (size > 8) {
       throw Exception("Size is greater than 8");

@@ -10,6 +10,8 @@ class OperationRequest extends PacketWithPayload {
     code = reader.readUint8();
     params = reader.readParameterTable();
   }
+
+  String toString() => 'OperationRequest $code: $params';
 }
 
 class OperationResponse extends PacketWithPayload {
@@ -22,6 +24,8 @@ class OperationResponse extends PacketWithPayload {
     debugMessage = reader.readValue() as String;
     params = reader.readParameterTable();
   }
+
+  String toString() => 'OperationResponse $code (return=$returnCode, msg=$debugMessage): $params';
 }
 
 class Event extends PacketWithPayload {
@@ -29,6 +33,8 @@ class Event extends PacketWithPayload {
     code = reader.readUint8();
     params = reader.readParameterTable();
   }
+
+  String toString() => 'Event $code: $params';
 }
 
 class InternalOperationRequest extends PacketWithPayload {
@@ -36,6 +42,8 @@ class InternalOperationRequest extends PacketWithPayload {
     code = reader.readUint8();
     params = reader.readParameterTable();
   }
+
+  String toString() => 'InternalOperationRequest $code: $params';
 }
 
 class InternalOperationResponse extends PacketWithPayload {
@@ -48,4 +56,6 @@ class InternalOperationResponse extends PacketWithPayload {
     debugMessage = reader.readValue() as String;
     params = reader.readParameterTable();
   }
+
+  String toString() => 'InternalOperationResponse $code (return=$returnCode, msg=$debugMessage): $params';
 }

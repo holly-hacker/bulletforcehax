@@ -19,6 +19,8 @@ class SizedFloat {
     _checkSize();
   }
 
+  String toString() => 'float${size*8} $value';
+
   void _checkSize() {
     if (size > 8) {
       throw Exception("Size is greater than 8");
