@@ -1,13 +1,13 @@
 abstract class DataType {
   static const int NullValue = 42;
-  static const int Dictionary = 68;
+  static const int Dictionary = 68; // Map<Object, Object>, predefined types
   static const int StringArray = 97;
   static const int Byte = 98;
   static const int Custom = 99;
   static const int Double = 100;
   static const int EventData = 101;
   static const int Float = 102;
-  static const int Hashtable = 104;
+  static const int Hashtable = 104; // Map<Object, Object>, random types
   static const int Integer = 105;
   static const int Short = 107;
   static const int Long = 108;
@@ -17,8 +17,8 @@ abstract class DataType {
   static const int OperationRequest = 113;
   static const int String = 115;
   static const int ByteArray = 120;
-  static const int Array = 121;
-  static const int ObjectArray = 122;
+  static const int Array = 121;       // A List, predetermined type
+  static const int ObjectArray = 122; // A Set, random types
 }
 
 abstract class PacketType {
