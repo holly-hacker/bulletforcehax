@@ -46,6 +46,8 @@ class SizedInt implements Serializable {
     }
   }
 
+  bool operator ==(other) => size == other.size && value == other.value;
+  int get hashCode => value.hashCode;
   String toString() => 'int${size*8} $value';
 
   void _checkSize() {

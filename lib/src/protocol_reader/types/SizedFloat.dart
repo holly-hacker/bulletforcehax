@@ -38,6 +38,8 @@ class SizedFloat implements Serializable {
     }
   }
 
+  bool operator ==(other) => size == other.size && value == other.value;
+  int get hashCode => value.hashCode;
   String toString() => 'float${size*8} $value';
 
   void _checkSize() {
