@@ -18,8 +18,8 @@ typedef ByteBuffer webSocketHookCallback(ByteBuffer data);
 
 void main() {
   print('Hello, world!');
-  hookWebSock(handlePacket, handlePacket);
-  // startGame();
+  hookWebSock(allowInterop(handlePacket), allowInterop(handlePacket));
+  startGame();
 }
 
 ByteBuffer handlePacket(ByteBuffer buffer) {
