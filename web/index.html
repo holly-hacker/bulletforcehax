@@ -56,6 +56,13 @@
                 data = cbSend(data);
             return this.origSend(data);
         }
+
+        var statusElement;
+        function writeStatus(s) {
+            if (!statusElement)
+                statusElement = document.getElementById('status');
+            statusElement.innerText = s;
+        }
     </script>
 </head>
 <body>
@@ -63,6 +70,7 @@
     <!-- <button onclick="startGame()">Start game</button> -->
 
     <div class="webgl-content">
+        <span id="status" style="font-family: monospace"></span>
         <div id="gameContainer" style="width: 960px; height: 540px"></div>
         <div class="footer">
             <div class="webgl-logo"></div>

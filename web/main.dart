@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
 import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 import 'package:js/js.dart';
@@ -17,10 +18,16 @@ external void startGame();
 external void hookWebSock(webSocketHookCallback cbSend, webSocketHookCallback cbRecv);
 typedef ByteBuffer webSocketHookCallback(ByteBuffer data);
 
+@JS()
+external void writeStatus(String s);
+
 void main() {
   print('Hello, world!');
+  writeStatus('Hooking');
   hookWebSock(allowInterop(handlePacket), allowInterop(handlePacket));
+  writeStatus('Starting game');
   startGame();
+  writeStatus('Done');
 }
 
 ByteBuffer handlePacket(ByteBuffer buffer) {
@@ -64,26 +71,58 @@ ByteBuffer handlePacket(ByteBuffer buffer) {
 
       default:
         print(packet);
+        break;
     }
   } else if (packet is OperationRequest) {
-    if (packet.code == OperationCode.RaiseEvent) {
-      var eventCode = packet.params[ParameterCode.Code];
-      var eventData = packet.params[ParameterCode.CustomEventContent];
+    switch (packet.code) {
+      case OperationCode.RaiseEvent: {
+        var eventCode = packet.params[ParameterCode.Code];
+        var eventData = packet.params[ParameterCode.CustomEventContent];
 
-      if (eventCode is SizedInt && eventData is Map<Object, Object>) {
-        switch (eventCode.value) {
-          case 200:
-            // custom game event. All in-game magic happens here
-            var code = eventData[SizedInt.byte(5)];
-            var data = eventData[SizedInt.byte(4)];
-            print('>>> Event 200 code $code with data $data');
-            return buffer;
-          case 201:
-            var data = eventData[SizedInt.short(10)] as List<Object>;
-            // var data = data1 as List<Object>;
-            // 11, 12, 13 are x, y, z
-            print('>>> Event 201 Sending our player info $data');
-            return buffer;
+        if (eventCode is SizedInt && eventData is Map<Object, Object>) {
+          switch (eventCode.value) {
+            case 200:
+              var code = eventData[SizedInt.byte(5)] as SizedInt;
+              var data = eventData[SizedInt.byte(4)];
+              if (code == null) {
+                // what
+              }
+              else if (code.value == 41) {
+                // shooting other 1
+                var data2 = data as List<Object>;
+                data2[1] = SizedFloat.float(13337);
+                buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
+              } else if (code.value == 10) {
+                // shooting other 2
+                var data2 = data as List<Object>;
+                data2[1] = SizedFloat.float(13337);
+                data2[4] = SizedFloat.float(0); // health left?
+                buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
+              } else if (code.value == 26) {
+                // shooting other with RPG?
+                var data2 = data as List<Object>;
+                data2[1] = SizedFloat.float(13337);
+                buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
+              } else if (code.value == 25) {
+                // chat
+                var data2 = data as List<Object>;
+                data2[0] = '[hax] [Sandwich] [FuckYou] ' + data2[0].toString(); // author
+                // data[1] == message
+                data2[2] = SizedInt.short(0xFF); // R
+                data2[3] = SizedInt.short(0x69); // G
+                data2[4] = SizedInt.short(0xB4); // B
+                buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
+              }
+              print('>>> Event 200 code $code with data $data');
+              writeStatus('>>> Event 200 code $code with data $data');
+              return buffer;
+            case 201:
+              var data = eventData[SizedInt.short(10)] as List<Object>;
+              // buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
+              // writeStatus('Event 201: $data');
+              print('>>> Event 201 Sending our player info $data');
+              return buffer;
+          }
         }
       }
     }
