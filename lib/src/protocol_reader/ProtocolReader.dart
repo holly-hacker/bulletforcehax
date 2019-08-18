@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
-import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/Array.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
+
+import 'constants.dart';
+import 'types/Array.dart';
+import 'types/CustomData.dart';
+import 'types/SizedFloat.dart';
+import 'types/SizedInt.dart';
+import 'types/packets.dart';
 
 class ProtocolReader extends ByteDataReader {
   ProtocolReader(Uint8List buffer) : super(endian: Endian.big) {

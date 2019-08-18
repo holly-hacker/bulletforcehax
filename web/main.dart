@@ -3,12 +3,7 @@ library dart_main;
 
 import 'dart:typed_data';
 
-import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
-import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
-import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
+import 'package:bullet_force_hax/bullet_force_hax.dart';
 import 'package:js/js.dart';
 
 @JS()

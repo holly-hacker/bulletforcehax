@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
-import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/Serializable.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
+
+import 'constants.dart';
+import 'types/Serializable.dart';
+import 'types/packets.dart';
 
 class ProtocolWriter extends ByteDataWriter {
   ProtocolWriter() : super(endian: Endian.big);

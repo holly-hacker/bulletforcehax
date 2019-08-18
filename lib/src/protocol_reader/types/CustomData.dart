@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:bullet_force_hax/src/protocol_reader/ProtocolReader.dart';
-import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
-import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/Serializable.dart';
+import '../ProtocolReader.dart';
+import '../ProtocolWriter.dart';
+import '../constants.dart';
+import 'Serializable.dart';
 
 class CustomData implements Serializable {
   Uint8List data;
