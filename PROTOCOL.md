@@ -87,10 +87,12 @@ I have no clue why the client sends this to the server.
 `ChangeThrowable(byte id)`
 
 #### Code 41: ShootOther?
-`ShootOther41(int32 targetId, float damageGiven, CustomData ?, byte ?, CustomData ?, CustomData ?)`
+`ShootOther41(int32 targetId, float damageGiven, Vector3 bulletDirection?, byte weaponId, Vector3 targetLocation?, Vector3 shooterPos)`
 
 Example data:
-- [int32 9, float32 24.513553619384766, Instance of 'CustomData', int8 1, Instance of 'CustomData', Instance of 'CustomData']
+- Foot: `[int32 4, float32 24.645000457763672, Vector3(0.4758644104003906,-1.3645477294921875,-0.22233200073242188), int8 14, Vector3(14.226451873779297,49.95946502685547,-6.848456859588623), Vector3(17.378496170043945,51.19110107421875,-6.529361724853516)]`
+- Stomach: `[int32 4, float32 26.5, Vector3(0.08257770538330078,-0.5146980285644531,0.0635824203491211), int8 14, Vector3(13.833165168762207,50.8093147277832,-6.56254243850708), Vector3(17.397846221923828,51.192405700683594,-6.52968692779541)]`
+- Head: `[int32 4, float32 56.445003509521484, Vector3(0.29883384704589844,0.0554046630859375,-0.027111530303955078), int8 14, Vector3(14.049421310424805,51.379417419433594,-6.653236389160156), Vector3(17.378286361694336,51.18973922729492,-6.529699802398682)]`
 
 #### Code 58: ?
 No parameter
@@ -119,4 +121,10 @@ Examples of parameters from server:
 Version of 200 for spectators?
 
 ### 207
-Version of 201 for spectators?[]()
+Version of 201 for spectators?
+
+## Custom Data
+Photon allows sending/receiving arbitrary data. They will get wrapped in a CustomData object and be given a type code.
+
+### 86: Vector3
+A set of 3 floats.
