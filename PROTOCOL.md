@@ -12,6 +12,9 @@ Other packet types are Init, InitResponse, InternalOperationRequest, InternalOpe
 ### OperationRequest
 Sent from client to server, usually expects a OperationResponse or Event (in the case of RaiseEvent) in return.
 
+#### 252: ?
+Launch UAV killstream: `OperationRequest 252: {251: {killstreak: int8 1}, 254: int32 8, 250: true}`
+
 #### 253: RaiseEvent
 Used during gameplay to send user updates to the server. Most commonly sent packet. Has a parameter `Code` (244) which specifies an EventCode, though this is usually a custom one. Also has a parameter `CustomEventContent` (245) which contains the event payload.
 

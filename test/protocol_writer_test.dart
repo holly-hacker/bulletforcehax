@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:bullet_force_hax/src/protocol_reader/ProtocolWriter.dart';
 import 'package:bullet_force_hax/src/protocol_reader/constants.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/Array.dart';
-import 'package:bullet_force_hax/src/protocol_reader/types/CustomData.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedFloat.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/SizedInt.dart';
+import 'package:bullet_force_hax/src/protocol_reader/types/UnimplementedCustomData.dart';
 import 'package:bullet_force_hax/src/protocol_reader/types/packets.dart';
 import 'package:test/test.dart';
 
@@ -141,7 +141,7 @@ void main() {
 
     test('can write custom data', () {
       var writer = ProtocolWriter()
-        ..writeValue(CustomData(42, Uint8List.fromList([0xDE, 0xAD, 0xBE, 0xEF])));
+        ..writeValue(UnimplementedCustomData(42, Uint8List.fromList([0xDE, 0xAD, 0xBE, 0xEF])));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));

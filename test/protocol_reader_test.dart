@@ -191,11 +191,12 @@ void main() {
       var reader = ProtocolReader(Uint8List.fromList([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]));
       var t = reader.readValue();
 
-      expect(t.runtimeType, CustomData);
+      expect(t is CustomData, isTrue);
       if (t is CustomData) {
         expect(t.typeCode, 42);
-        expect(t.data.length, 4);
-        expect(t.data, [0xDE, 0xAD, 0xBE, 0xEF]);
+        var data = t.getBytes();
+        expect(data.length, 4);
+        expect(data, [0xDE, 0xAD, 0xBE, 0xEF]);
       }
     });
   });
