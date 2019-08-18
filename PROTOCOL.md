@@ -12,8 +12,15 @@ Other packet types are Init, InitResponse, InternalOperationRequest, InternalOpe
 ### OperationRequest
 Sent from client to server, usually expects a OperationResponse or Event (in the case of RaiseEvent) in return.
 
-#### 252: ?
-Launch UAV killstream: `OperationRequest 252: {251: {killstreak: int8 1}, 254: int32 8, 250: true}`
+#### 252: SetProperties
+Launch UAV killstreak?: `OperationRequest 252: {251: {killstreak: int8 1}, 254: int32 8, 250: true}` (Parameters: 251=Properties, 254=ActorNr, 150=Broadcast)
+
+- 1: uav
+- 2: super soldier 
+- 3: counter-uav (works!)
+- 4: a-uav 
+- 5: haste
+- 6: Nuke, does not show
 
 #### 253: RaiseEvent
 Used during gameplay to send user updates to the server. Most commonly sent packet. Has a parameter `Code` (244) which specifies an EventCode, though this is usually a custom one. Also has a parameter `CustomEventContent` (245) which contains the event payload.
@@ -70,6 +77,9 @@ Health is between 0 and 100?
 Example data:
 - [int32 1, float32 26.5, Instance of 'CustomData', int8 14, float32 73.5]
 
+#### Code 15: Knife?
+No parameter
+
 #### Code 25: Chat
 `Chat(string author, string message, short r, short g, short b)`
 
@@ -106,9 +116,42 @@ No parameter
 ### 201
 Seems to carry continuous status updates from the player, including velocity, pitch, yaw.
 
-Comes with an ActorList when from server?
+Values:
+1. int, based on actorId
+2. bool, ?
+3. null, ?
+4. int16, camera pitch
+5. int16, camera yaw
+6. int16, walking direction
+7. int16, ?
+8. int16, spawn invulnerability?
+9. int16, ?
+10. int16, ?
+11. int16, ?
+12. int16, velocity x
+13. int16, velocity y
+14. int16, velocity z
+15. int16 health?
+16. int8, ?
+17. int8, ?
+18. int8, ?
+19. int8, ?
+20. int8, Animation flags
+21. [if S->C] int8, ?
+21. int32, always 999 for client?
+22. Vector3, likely position
 
-Different arguments if from server.
+Comes with an ActorList when from server
+
+#### Animation flags
+- 0x01: ?
+- 0x02: ?
+- 0x04: ? 
+- 0x08: on land?
+- 0x10: throwing
+- 0x20: reload
+- 0x40: shooting
+- 0x80: crouch
 
 Examples of parameters from client:
 - [int32 19001, false, null, int16 2850, int16 530, int16 534, int16 0, int16 0, int16 324, int16 0, int16 0, int16 0, int16 19056, int16 0, int16 10000, int8 1, int8 0, int8 0, int8 0, int8 0, int32 999, Instance of 'CustomData']
@@ -119,6 +162,7 @@ Examples of parameters from client:
 Examples of parameters from server:
 - [int32 13002, false, null, int16 150, int16 2790, int16 3600, int16 17, int16 9, int16 250, int16 -7, int16 16, int16 -2361, int16 -4897, int16 401, int16 10000, int8 0, int8 0, int8 0, int8 28, int8 0, int32 15, Instance of 'CustomData']
 - [int32 1001, false, null, int16 100, int16 1480, int16 3, int16 0, int16 0, int16 222, int16 0, int16 0, int16 993, int16 15, int16 -1589, int16 10000, int8 1, int8 0, int8 1, int8 0, int8 8, int32 999, Instance of 'CustomData']
+- [int32 1001, false, null, int16 80, int16 3560, int16 3567, int16 0, int16 0, int16 193, int16 0, int16 0, int16 0, int16 0, int16 0, int16 10000, int8 0, int8 0, int8 0, int8 0, int8 8, int32 999, Vector3(16.558441162109375,31.58450698852539,45.3120002746582)]
 
 ### 206
 Version of 200 for spectators?
