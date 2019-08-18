@@ -40,6 +40,7 @@ ByteBuffer handlePacket(ByteBuffer buffer) {
           if (data['password'] != '' && data['password'] != null && data['roomName'] != null) {
             print('Password-protected game "${data['roomName']}" has password "${data['password']}"');
             data['roomName'] = (data['roomName'] as String) + ' (password: ${data['password']})';
+            data['password'] = null;
           }
         }
         return (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
