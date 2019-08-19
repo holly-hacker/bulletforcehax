@@ -40,21 +40,31 @@
                 this.origRecv = this.onmessage;
                 this.onmessage = function (msg) {
                     if (msg.data instanceof ArrayBuffer) {
-                        msg = new MessageEvent('message', {
-                            data: cbRecv(msg.data),
+                        let data = cbRecv(msg.data);
+
+                        _this.origRecv(new MessageEvent('message', {
+                            data: data,
                             lastEventId: msg.lastEventId,
                             origin: msg.origin,
                             ports: msg.ports,
                             source: msg.source,
-                        });
+                        }));
+                    } else {
+                        // do nothing, just return the original
+                        _this.origRecv(msg);
                     }
-                    return _this.origRecv(msg);
                 };
                 this.isRecvHooked = true;
             }
             if (data instanceof ArrayBuffer)
-                data = cbSend(data);
-            return this.origSend(data);
+            {
+                let newPacketData = cbSend(data);
+                for (let packetData of newPacketData) {
+                    return this.origSend(packetData);
+                }
+            } else {
+                return this.origSend(data);
+            }
         }
 
         var statusElement;
