@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bullet Force hax</title>
+
+    <!--suppress HtmlUnknownTarget -->
+    <script defer src="main.dart.js"></script>
+
+    <link rel="stylesheet" href="https://server2.blayzegames.com/BulletForceWebGL/TemplateData/style.css">
+    <script src="https://server2.blayzegames.com/BulletForceWebGL/TemplateData/UnityProgress.js"></script>
+    <script src="https://server2.blayzegames.com/BulletForceWebGL/Build/UnityLoader.js"></script>
+
+    <script>
+        function startGame() {
+            window.CrazySDK = {
+                requestAd() {},
+                init() {},
+            };
+
+            window.gameInstance = UnityLoader.instantiate("gameContainer", "https://files.crazygames.com/bullet-force/9/Build/01650350c4b8491fe275c2ded00c5af5.json", {
+                onProgress: UnityProgress
+            });
+
+            return window.gameInstance;
+        }
+
+        let hooked = false;
+        let cbSend, cbRecv;
+        function hookWebSock(send, recv) {
+            if (hooked) throw Error('Already hooked!');
+            hooked = true;
+
+            cbSend = send;
+            cbRecv = recv;
+
+            let proto = WebSocket.prototype;
+            proto.origSend = proto.send;
+            proto.send = newSend;
+        }
+
+        function newSend(data) {
+            const _this = this;
+            if (!this.isRecvHooked && this.onmessage) {
+                this.origRecv = this.onmessage;
+                this.onmessage = function (msg) {
+                    if (msg.data instanceof ArrayBuffer) {
+                        let data = cbRecv(msg.data);
+
+                        _this.origRecv(new MessageEvent('message', {
+                            data: data,
+                            lastEventId: msg.lastEventId,
+                            origin: msg.origin,
+                            ports: msg.ports,
+                            source: msg.source,
+                        }));
+                    } else {
+                        // do nothing, just return the original
+                        _this.origRecv(msg);
+                    }
+                };
+                this.isRecvHooked = true;
+            }
+            if (data instanceof ArrayBuffer)
+            {
+                let newPacketData = cbSend(data);
+                for (let packetData of newPacketData) {
+                    return this.origSend(packetData);
+                }
+            } else {
+                return this.origSend(data);
+            }
+        }
+
+        var statusElement;
+        function writeStatus(s) {
+            if (!statusElement)
+                statusElement = document.getElementById('status');
+            statusElement.innerText = s;
+        }
+    </script>
+</head>
+<body>
+
+    <!-- <button onclick="startGame()">Start game</button> -->
+
+    <div class="webgl-content">
+        <span id="status" style="font-family: monospace"></span>
+        <div id="gameContainer" style="width: 960px; height: 540px"></div>
+        <div class="footer">
+            <div class="webgl-logo"></div>
+            <div class="fullscreen" onclick="gameInstance.SetFullscreen(1)"></div>
+            <div class="title">Bullet Force WebGL</div>
+        </div>
+    </div>
+
+</body>
+</html>
