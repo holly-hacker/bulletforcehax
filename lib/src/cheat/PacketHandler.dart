@@ -1,29 +1,16 @@
-@JS()
-library dart_packets;
-
 import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
-import 'package:js/js.dart';
 
 import 'GameState.dart';
-
-typedef List<ByteBuffer> webSocketSendHookCallback(ByteBuffer data);
-typedef ByteBuffer webSocketRecvHookCallback(ByteBuffer data);
 
 class PacketHandler {
   GameState state;
 
-  @JS()
-  external void hookWebSock(webSocketSendHookCallback cbSend, webSocketRecvHookCallback cbRecv);
+  void Function(String s) writeStatus;
 
-  @JS()
-  external void writeStatus(String s);
-
-  void doHook() {
-    hookWebSock(allowInterop(handleBufferSend), allowInterop(handleBufferRecv));
-  }
+  PacketHandler(this.writeStatus);
 
   List<ByteBuffer> handleBufferSend(ByteBuffer buffer) {
     var packet = ProtocolReader(buffer.asUint8List()).readPacket();
