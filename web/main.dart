@@ -10,6 +10,6 @@ external void startGame();
 
 void main() {
   print('Hello, world!');
-  doHook();
+  PacketHandler().doHook();
   startGame();
 }
