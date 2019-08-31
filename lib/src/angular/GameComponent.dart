@@ -1,19 +1,14 @@
 import 'package:angular/angular.dart';
+import 'package:angular_components/angular_components.dart';
 
 @Component(
   selector: 'my-app',
-  template: '''
-    <div class="webgl-content">
-        <span id="status" style="font-family: monospace"></span>
-        <div id="gameContainer" style="width: 960px; height: 540px"></div>
-        <div class="footer">
-            <div class="webgl-logo"></div>
-            <div class="fullscreen" onclick="gameInstance.SetFullscreen(1)"></div>
-            <div class="title">{{name}}</div>
-        </div>
-    </div>
-  ''',
+  templateUrl: 'GameComponent.html',
+  directives: [
+    MaterialButtonComponent,
+    MaterialIconComponent
+  ]
 )
 class GameComponent {
-  var name = 'Bullet Force WebGL';
+  var name = 'Bullet Force Hax';
 }
