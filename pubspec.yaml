@@ -11,6 +11,8 @@ dependencies:
   path: ^1.6.0
   buffer: ^1.0.6
   convert: ^2.1.1
+  angular: ^5.3.0
+  angular_components: ^0.13.0+1
 
 dev_dependencies:
   build_runner: '>=1.6.2 <2.0.0'
