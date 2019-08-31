@@ -12,7 +12,7 @@ Other packet types are Init, InitResponse, InternalOperationRequest, InternalOpe
 ### OperationRequest
 Sent from client to server, usually expects a OperationResponse or Event (in the case of RaiseEvent) in return.
 
-#### 226
+#### 226: JoinGame
 
 `OperationRequest 226: {255: 7328cad7-9945-4ce8-a95f-f75f10af5097, 249: {teamNumber: int8 0, rank: int8 5, killstreak: int8 0, characterCamo: int8 0, unlockedweapons: ProtocolArray 105: [int32 82432, int32 0], model: int8 1, perks: [0, 0, 0, 0, 0, 0, 0, 0], int8 255: (H) SandwichHax}, 250: true}`
 
@@ -81,9 +81,46 @@ See Gameplay Events for information about gameplay events.
 ### OperationResponse
 Sent from server to client, in response to OperationRequest.
 
-#### 226
+#### 226: JoinGame
 
 `OperationResponse 226 (return=0, msg=null): {254: int32 2, 249: {int32 1: {characterCamo: int8 0, unlockedweapons: ProtocolArray 105: [int32 82432, int32 0], rank: int8 1, killstreak: int8 0, perks: [0, 0, 0, 0, 0, 0, 0, 0], teamNumber: int8 0, int8 255: (H) JustM3, model: int8 0}}, 248: {matchCountdownTime: float32 20, int8 249: true, int8 255: int8 9, int8 254: true, int8 253: true, eventcode: int32 0, int8 250: ProtocolArray 115: [roomName, mapName, modeName, password, dedicated, switchingmap, allowedweapons, eventcode, averagerank], timeScale: float32 1, int8 248: int32 1, password: xfbfgfg, modeName: Conquest, averagerank: int32 1, roundStarted: false, roomName: DefaultMatch, mapName: Urban, maxPing: int16 700, bannedweaponmessage: This message should never appear!, dedicated: false, matchStarted: false, gunGamePreset: int32 0, allowedweapons: ProtocolArray 105: [int32 -1, int32 -1], scorelimit: int32 200, switchingmap: false}, 252: ProtocolArray 105: [int32 1, int32 2]}`
+
+Fields on full request:
+- ActorNr (254): int32 2
+- PlayerProperties (249):
+  - int32 1:
+    - characterCamo: int8 0
+    - unlockedweapons: ProtocolArray 105: [int32 82432, int32 0]
+    - rank: int8 1
+    - killstreak: int8 0
+    - perks: [0, 0, 0, 0, 0, 0, 0, 0]
+    - teamNumber: int8 0
+    - int8 255: (H) JustM3, model: int8 0
+- GameProperties (248):
+  - matchCountdownTime: float32 20
+  - int8 249: true
+  - int8 255: int8 9
+  - int8 254: true
+  - int8 253: true
+  - eventcode: int32 0
+  - int8 250: ProtocolArray 115: [roomName, mapName, modeName, password, dedicated, switchingmap, allowedweapons, eventcode, averagerank]
+  - timeScale: float32 1
+  - int8 248: int32 1
+  - password: xfbfgfg
+  - modeName: Conquest
+  - averagerank: int32 1
+  - roundStarted: false
+  - roomName: DefaultMatch
+  - mapName: Urban
+  - maxPing: int16 700
+  - bannedweaponmessage: This message should never appear!
+  - dedicated: false
+  - matchStarted: false
+  - gunGamePreset: int32 0
+  - allowedweapons: ProtocolArray 105: [int32 -1, int32 -1]
+  - scorelimit: int32 200
+  - switchingmap: false
+- ActorList (252): ProtocolArray 105: [int32 1, int32 2]
 
 #### 227: CreateGame
 
@@ -115,7 +152,7 @@ Fields on full request:
   - switchingmap: false
 - ActorList (252): ProtocolArray 105: [int32 1]
 
-#### 255: JoinGame
+#### 255: Join
 Uses parameters ActorNr, ActorList, PlayerProperties and GameProperties.
 
 TODO: correlation with event 255?
@@ -189,11 +226,15 @@ Progress is a value between -1 and 1.
 
 Health is between 0 and 100?
 
-#### Code 10: ShootOther?
-`ShootOther10(int32 targetId, float damageGiven, CustomData ?, byte gunType?, float damageLeft?)`
+#### Code 10: ShootOther? TakenDamage?
+`ShootOther10(int32 targetId, float damageGiven, Vector3 damageLocation?, byte gunType, float damageLeft?)`
 
-Example data:
-- [int32 1, float32 26.5, Instance of 'CustomData', int8 14, float32 73.5]
+Example send:
+- [int32 1, float32 26.5, some Vector3, int8 14, float32 73.5]
+
+Example receive:
+- [int32 1, float32 56.445003509521484, Vector3(-0.22093963623046875,0.0686492919921875,0.204864501953125), int8 14, float32 43.554996490478516]
+- [int32 1, float32 56.445003509521484, Vector3(-0.20749282836914062,0.10479736328125,0.19452285766601562), int8 14, float32 -12.890007019042969]
 
 #### Code 14
 
@@ -202,6 +243,14 @@ Event14(true)
 
 #### Code 15: Knife?
 No parameter
+
+#### Code 24: PlayerDied
+`YouDied(int32 targetId, int32 sourceId, int8 ?, int8 gunType)`
+
+TODO: can you send this? :)
+
+Example receive:
+- [int32 3, int32 1, int8 100, int8 14]
 
 #### Code 25: Chat
 `Chat(string author, string message, short r, short g, short b)`

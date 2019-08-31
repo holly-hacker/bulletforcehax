@@ -18,6 +18,8 @@ typedef ByteBuffer webSocketRecvHookCallback(ByteBuffer data);
 @JS()
 external void writeStatus(String s);
 
+int myActorNumber;
+
 void main() {
   print('Hello, world!');
   writeStatus('Hooking');
@@ -59,17 +61,17 @@ List<PacketWithPayload> handlePacketSend(PacketWithPayload packet) {
               }
               else if (code.value == 41) {
                 // shooting other 1
-                var data2 = data as List<Object>;
-                data2[1] = SizedFloat.float(13337);
+                // var data2 = data as List<Object>;
+                // data2[1] = SizedFloat.float(13337);
               } else if (code.value == 10) {
                 // shooting other 2
-                var data2 = data as List<Object>;
-                data2[1] = SizedFloat.float(13337);
-                data2[4] = SizedFloat.float(0); // health left?
+                // var data2 = data as List<Object>;
+                // data2[1] = SizedFloat.float(13337);
+                // data2[4] = SizedFloat.float(0); // health left?
               } else if (code.value == 26) {
                 // shooting other with RPG?
-                var data2 = data as List<Object>;
-                data2[1] = SizedFloat.float(13337);
+                // var data2 = data as List<Object>;
+                // data2[1] = SizedFloat.float(13337);
               } else if (code.value == 25) {
                 // chat
                 var data2 = data as List<Object>;
@@ -80,7 +82,6 @@ List<PacketWithPayload> handlePacketSend(PacketWithPayload packet) {
                 data2[4] = SizedInt.short(0xB4); // B
               }
               print('>>> Event 200 code $code with data $data');
-              writeStatus('>>> Event 200 code $code with data $data');
               return [packet];
             case 201:
               var data = eventData[SizedInt.short(10)] as List<Object>;
@@ -133,6 +134,22 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
         var code = (eventData[SizedInt.byte(5)] as SizedInt).value;
         var payload = eventData[SizedInt.byte(4)];  // can be null!
         print('<<< Event 200: actor $actor, code $code, payload $payload');
+
+        if (payload is List<Object>) {
+          switch (code) {
+            case 10:
+              // payload[1] = SizedFloat.float(0);
+              // payload[4] = SizedFloat.float(50); // don't appear to receive damage
+              break;
+            case 24:
+              if (myActorNumber != null && payload[0] == SizedInt.int(myActorNumber)) {
+                // writeStatus("Fuck death");
+                // return OperationResponse(66, "", 0, {}); // When the server tell you that you died, just ignore it ;)
+              }
+              break;
+          }
+        }
+
         break;
       case 201:
         var actor = packet.params[ParameterCode.ActorNr];
@@ -147,7 +164,12 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
     }
   }
   else if (packet is OperationResponse) {
-    print(packet);
+    print('<<< ' + packet.toString());
+
+    if (packet.code == OperationCode.JoinGame && packet.params.containsKey(ParameterCode.ActorNr)) {
+      myActorNumber = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
+      writeStatus('Our actor nr is $myActorNumber');
+    }
   }
   else {
     debugger(message: 'packet shouldnt be here');
