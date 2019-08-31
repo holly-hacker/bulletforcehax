@@ -65,10 +65,10 @@
             {
                 let newPacketData = cbSend(data);
                 for (let packetData of newPacketData) {
-                    return this.origSend(packetData);
+                    this.origSend(packetData);
                 }
             } else {
-                return this.origSend(data);
+                this.origSend(data);
             }
         }
 
