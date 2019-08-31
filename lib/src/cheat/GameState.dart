@@ -1,4 +1,4 @@
-import 'package:bullet_force_hax/src/protocol_reader/types/Vector3.dart';
+import 'package:bullet_force_hax/src/protocol_reader.dart';
 
 class GameState {
   int actorNumber;

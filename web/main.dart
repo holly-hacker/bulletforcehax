@@ -3,7 +3,7 @@ library dart_main;
 
 import 'package:js/js.dart';
 
-import 'PacketHandler.dart';
+import 'package:bullet_force_hax/bullet_force_hax.dart';
 
 @JS()
 external void startGame();
