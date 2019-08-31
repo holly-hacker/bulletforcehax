@@ -5,4 +5,5 @@ export 'protocol_reader/types/Array.dart';
 export 'protocol_reader/types/CustomData.dart';
 export 'protocol_reader/types/SizedFloat.dart';
 export 'protocol_reader/types/SizedInt.dart';
+export 'protocol_reader/types/Vector3.dart';
 export 'protocol_reader/types/packets.dart';

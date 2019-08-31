@@ -95,7 +95,8 @@ Fields on full request:
     - killstreak: int8 0
     - perks: [0, 0, 0, 0, 0, 0, 0, 0]
     - teamNumber: int8 0
-    - int8 255: (H) JustM3, model: int8 0
+    - int8 255: (H) JustM3
+    - model: int8 0
 - GameProperties (248):
   - matchCountdownTime: float32 20
   - int8 249: true
@@ -317,11 +318,10 @@ Values:
 16. int8, ?
 17. int8, ?
 18. int8, ?
-19. int8, ?
+19. int8, weapon id?
 20. int8, Animation flags
-21. [if S->C] int8, ?
-21. int32, always 999 for client?
-22. Vector3, likely position
+21. int32, ?
+22. Vector3, position
 
 Comes with an ActorList when from server
 

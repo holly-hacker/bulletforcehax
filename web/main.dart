@@ -7,6 +7,8 @@ import 'dart:typed_data';
 import 'package:bullet_force_hax/bullet_force_hax.dart';
 import 'package:js/js.dart';
 
+import 'GameState.dart';
+
 @JS()
 external void startGame();
 
@@ -18,7 +20,7 @@ typedef ByteBuffer webSocketRecvHookCallback(ByteBuffer data);
 @JS()
 external void writeStatus(String s);
 
-int myActorNumber;
+GameState state;
 
 void main() {
   print('Hello, world!');
@@ -88,6 +90,12 @@ List<PacketWithPayload> handlePacketSend(PacketWithPayload packet) {
               // buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
               // writeStatus('Event 201: $data');
               print('>>> Event 201 Sending our player info $data');
+
+              if (data is Map<Object, Object>) {
+                var player = state.getMe();
+                ApplyPacket201ToPlayer(player, data);
+              }
+
               return [packet];
           }
         }
@@ -142,7 +150,7 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
               // payload[4] = SizedFloat.float(50); // don't appear to receive damage
               break;
             case 24:
-              if (myActorNumber != null && payload[0] == SizedInt.int(myActorNumber)) {
+              if (state.actorNumber != null && payload[0] == SizedInt.int(state.actorNumber)) {
                 // writeStatus("Fuck death");
                 // return OperationResponse(66, "", 0, {}); // When the server tell you that you died, just ignore it ;)
               }
@@ -152,10 +160,16 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
 
         break;
       case 201:
-        var actor = packet.params[ParameterCode.ActorNr];
+        var actor = packet.params[ParameterCode.ActorNr] as SizedInt;
         var eventData = packet.params[ParameterCode.CustomEventContent] as Map<Object, Object>;
         var payload = eventData[SizedInt.short(10)];  // can be null!
         print('<<< Event 201: actor $actor, payload $payload');
+
+        if (payload is List<Object>) {
+          var player = state.getPlayer(actor.value);
+          ApplyPacket201ToPlayer(player, payload);
+        }
+
         break;
 
       default:
@@ -167,8 +181,18 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
     print('<<< ' + packet.toString());
 
     if (packet.code == OperationCode.JoinGame && packet.params.containsKey(ParameterCode.ActorNr)) {
-      myActorNumber = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
-      writeStatus('Our actor nr is $myActorNumber');
+      // new game started
+      var myActorNumber = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
+      state = GameState(myActorNumber);
+
+      var players = packet.params[ParameterCode.PlayerProperties] as Map<Object, Object>;
+      for (var playerId in players.keys.cast<SizedInt>()) {
+        var player = state.getPlayer(playerId.value);
+        var playerProps = players[playerId] as Map<Object, Object>;
+        player.name = playerProps[SizedInt.byte(255)];
+      }
+
+      writeStatus('Our actor nr is ${state.actorNumber}');
     }
   }
   else {
@@ -177,4 +201,13 @@ PacketWithPayload handlePacketRecv(PacketWithPayload packet) {
   }
 
   return packet;  // just return old value
+}
+
+void ApplyPacket201ToPlayer(PlayerState player, List<Object> payload) {
+  player.secondaryId = (payload[0] as SizedInt).value;
+  player.pitch = (payload[3] as SizedInt).value;
+  player.yaw = (payload[4] as SizedInt).value;
+  player.bodyYaw = (payload[5] as SizedInt).value;
+  player.health = (payload[14] as SizedInt).value;
+  player.position = (payload[21] as Vector3);
 }
