@@ -3,7 +3,7 @@ import 'package:angular_components/angular_components.dart';
 
 @Component(
   selector: 'my-app',
-  templateUrl: 'GameComponent.html',
+  templateUrl: 'game_component.html',
   directives: [
     MaterialButtonComponent,
     MaterialIconComponent
