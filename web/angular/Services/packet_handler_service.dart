@@ -3,14 +3,17 @@ import 'dart:typed_data';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
 
-import 'GameState.dart';
+import '../Models/GameState.dart';
+import '../Models/PlayerState.dart';
+import 'js_interop_service.dart';
 
-class PacketHandler {
+class PacketHandlerService {
   GameState state;
 
-  void Function(String s) writeStatus;
+  JsInteropService jsInterop;
+  void Function(String s) get writeStatus => jsInterop.writeStatus;
 
-  PacketHandler(this.writeStatus);
+  PacketHandlerService(this.jsInterop);
 
   List<ByteBuffer> handleBufferSend(ByteBuffer buffer) {
     var packet = ProtocolReader(buffer.asUint8List()).readPacket();
