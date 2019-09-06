@@ -30,5 +30,8 @@ Future doBot() async {
   print('connecting to first endpoint');
   await bot.connectInitial();
 
+  print('establishing connection to main endpoint');
+  await bot.connectMain();
+
   print('done');
 }
