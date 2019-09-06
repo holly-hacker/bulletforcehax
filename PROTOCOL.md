@@ -15,6 +15,22 @@ Sent from client to server, usually expects a OperationResponse or Event (in the
 #### 226: JoinGame
 
 `OperationRequest 226: {255: 7328cad7-9945-4ce8-a95f-f75f10af5097, 249: {teamNumber: int8 0, rank: int8 5, killstreak: int8 0, characterCamo: int8 0, unlockedweapons: ProtocolArray 105: [int32 82432, int32 0], model: int8 1, perks: [0, 0, 0, 0, 0, 0, 0, 0], int8 255: (H) SandwichHax}, 250: true}`
+```
+OperationRequest 226: {
+    255: 07fac636-8cfc-4535-9f71-b28014571407,
+    249: {
+        teamNumber: int8 0,
+        rank: int8 6,
+        killstreak: int8 0,
+        characterCamo: int8 0,
+        unlockedweapons: ProtocolArray 105: [int32 82432, int32 0],
+        model: int8 1,
+        perks: [0, 0, 0, 0, 0, 0, 0, 0],
+        int8 255: (H) SandwichHax
+    },
+    250: true
+}
+```
 
 #### 227: CreateGame
 
@@ -172,7 +188,34 @@ Contains tickbase
 #### 229: GameListUpdate
 Contains a list of lobbies with information such as lobby name, lobby password (!), allowed weapons, map, average rank, amount of players, etc. The list of lobbies is a hashmap with the lobby's GUID as key.
 
+
+
 GameList contains a list of all lobbies, while GameListUpdate only contains changed lobbies.
+
+Example:
+```
+Event 230: {
+    222: {
+        eb66ecc5-1277-45e3-8096-8d4e31e44da5: {
+            int8 253: true,
+            int8 252: int8 1,
+            modeName: Gun Game,
+            averagerank: int32 73,
+            switchingmap: false,
+            roomName: outlaws,
+            allowedweapons: ProtocolArray 105: [int32 -1, int32 -1],
+            eventcode: int32 0,
+            dedicated: false,
+            password: stinky,
+            mapName: Woods,
+            int8 255: int8 4
+        },
+        ca3d05f5-a9ef-4e89-b07f-c8b2d750a4db: { ... },
+        22cb83db-631b-4f13-8fc2-d742f8f715e3: { ... },
+        ...
+    }
+}
+```
 
 #### 255: Join
 

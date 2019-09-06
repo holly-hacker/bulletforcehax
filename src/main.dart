@@ -31,7 +31,10 @@ Future doBot() async {
   await bot.connectInitial();
 
   print('establishing connection to main endpoint');
-  await bot.connectMain();
+  await bot.connectMain((i) => i.roomName == "HoLLyTest");
+
+  print('connecting to match');
+  await bot.connectMatch();
 
   print('done');
 }

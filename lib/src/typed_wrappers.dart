@@ -1,0 +1,1 @@
+export 'typed_wrappers/game_list_item.dart';
