@@ -9,8 +9,7 @@ import 'dart:typed_data';
 
 Future<WebSocket> connectSocket(String host, int port, String protocol) async {
   Random r = Random();
-  String key = base64.encode(List<int>.generate(8, (_) => r.nextInt(255)));
-  key = "NzAxZThjZjQtMzk5Zi00Ng==";
+  String key = base64.encode(List<int>.generate(16, (_) => r.nextInt(255)));
 
   Socket socket = await Socket.connect(host, port);
 
