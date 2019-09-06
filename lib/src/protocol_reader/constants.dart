@@ -33,6 +33,11 @@ abstract class PacketType {
   static const int RawMessage = 9;
 }
 
+abstract class InternalOperationCode {
+  static const int InitEncryption = 0;
+  static const int Ping = 1;
+}
+
 abstract class OperationCode {
   static const int GetGameList = 217;
   static const int ServerSettings = 218;
