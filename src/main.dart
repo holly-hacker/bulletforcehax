@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -27,14 +28,20 @@ Future doBot() async {
   print('initializing');
   var bot = Bot();
 
-  print('connecting to first endpoint');
-  await bot.connectInitial();
+  print('establishing connection to lobby');
+  await bot.connectLobby();
 
-  print('establishing connection to main endpoint');
-  await bot.connectMain((i) => i.roomName == "HoLLyTest");
+  print('Finding match to join');
+  var game = await bot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
 
   print('connecting to match');
-  await bot.connectMatch();
+  await bot.connectMatch(game.roomId);
+
+  print('connected to match, disconnecting from lobby');
+  await bot.disconnectLobby();
+
+  print('waiting 10 seconds');
+  await Future.delayed(Duration(seconds: 10));
 
   print('done');
 }

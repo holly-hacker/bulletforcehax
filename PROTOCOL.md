@@ -9,6 +9,19 @@ Packets are generally instances of Event, OperationRequest or OperationResponse.
 
 Other packet types are Init, InitResponse, InternalOperationRequest, InternalOperationResponse, Message and RawMessage
 
+### InternalOperationRequest
+
+#### 1: Ping
+Sent params are:
+- 1: Your current time. This just get echo'd back along with the server time.
+
+### InternalOperationResponse
+
+#### 1: Ping
+Received params are:
+- 1: Original parameter 1 from request
+- 2: The time of the server
+
 ### OperationRequest
 Sent from client to server, usually expects a OperationResponse or Event (in the case of RaiseEvent) in return.
 
@@ -71,6 +84,12 @@ Fields for full request:
   - int8 249: true
 - CleanupCacheOnLeave (241): true
 
+
+#### 230: Authenticate
+Params for load balancing server:
+- 220: AppVersion, eg. `1.34_WebGL_1.73`
+- 224: ApplicationId, application-unique guid
+- 210: AzureNodeInfo, seems to be region?
 
 #### 252: SetProperties
 On match join: `OperationRequest 252: {251: {matchCountdownTime: float32 0, eventcode: int32 0, timeScale: float32 1, password: sdfgdfh, modeName: Conquest, averagerank: int32 0, roundStarted: false, roomName: DefaultMatch, mapName: City, maxPing: int16 700, bannedweaponmessage: This message should never appear!, dedicated: false, matchStarted: false, gunGamePreset: int32 0, allowedweapons: ProtocolArray 105: [int32 -1, int32 -1], scorelimit: int32 200, switchingmap: false}, 250: true}`
@@ -168,6 +187,12 @@ Fields on full request:
   - scorelimit: int32 200
   - switchingmap: false
 - ActorList (252): ProtocolArray 105: [int32 1]
+
+
+#### 230: Authenticate
+Has Address (230), Secret (221), UserId (225), Nickname (196)
+
+UserId is a guid. When connected to load balancing server, Secret is used to authenticate on the game server.
 
 #### 255: Join
 Uses parameters ActorNr, ActorList, PlayerProperties and GameProperties.
