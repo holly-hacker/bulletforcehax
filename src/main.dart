@@ -32,7 +32,7 @@ Future doBot() async {
   await lobbyBot.connectLobby();
 
   print('Finding match to join');
-  var game = await lobbyBot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
+  var game = await lobbyBot.gamesStream.firstWhere((match) => match.roomName == "jj");
 
   print('getting room credentials');
   var credentials = await lobbyBot.getRoomCredentials(game.roomId);
@@ -46,6 +46,9 @@ Future doBot() async {
 
   print('waiting 10 seconds');
   await Future.delayed(Duration(seconds: 10));
+
+  print('disconnecting from match');
+  await gameplayBot.disconnectMatch();
 
   print('done');
 }
