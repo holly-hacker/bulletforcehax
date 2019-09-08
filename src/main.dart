@@ -34,8 +34,11 @@ Future doBot() async {
   print('Finding match to join');
   var game = await bot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
 
+  print('getting room credentials');
+  var credentials = await bot.getRoomCredentials(game.roomId);
+
   print('connecting to match');
-  await bot.connectMatch(game.roomId);
+  await bot.connectMatch(game.roomId, credentials);
 
   print('connected to match, disconnecting from lobby');
   await bot.disconnectLobby();

@@ -10,10 +10,14 @@ class Bot {
   Map<String, GameListItem> games = Map();
 
   StreamController<GameListItem> _gamesController = StreamController<GameListItem>();
-  Stream<GameListItem> get gamesStream => _gamesController.stream;  // TODO: implement pause/resume? create version for new games only?
-  
+  Stream<GameListItem> get gamesStream => _gamesController.stream;  // TODO: implement pause/resume?
+  StreamController<GameListItem> _newGamesController = StreamController<GameListItem>();
+  Stream<GameListItem> get newGamesStream => _newGamesController.stream;  // TODO: implement pause/resume?
+
   GameSocket _lobbySocket;
   GameSocket _matchSocket;
+
+  Completer<void> _getRoomCompleter;
 
   Future connectLobby() async {
     var credentials = await _getLobbyCredentials();
@@ -45,26 +49,45 @@ class Bot {
           assert(value is Map);
           if ((value as Map).containsKey(SizedInt.byte(251))) {
             games.remove(key);
-            print('removed game $key');
           } else {
-            games[key] = GameListItem.fromMap(key, value);
-            _gamesController.add(games[key]);
+            var item = GameListItem.fromMap(key, value);
+            if (!games.containsKey(key)) _newGamesController.add(item);
+            _gamesController.add(item);
+
+            games[key] = item;
           }
         });
-
-        print('lobby update for ${map.length}/${games.length} games');
       }
     });
   }
 
   Future disconnectLobby() async => await _lobbySocket.close();
+  
+  Future<ConnectionCredentials> getRoomCredentials(String roomId) async {
+    // wait until previous join request is done
+    while (_getRoomCompleter != null) {
+      await _getRoomCompleter.future;
+    }
 
-  Future connectMatch(String roomName, [ConnectionCredentials credentials]) async {
+    _getRoomCompleter = Completer();
+    _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
+
+    var joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame) as OperationResponse;
+    _getRoomCompleter.complete();
+    _getRoomCompleter = null;
+    if (joinGamePacket.returnCode != 0) {
+      throw Exception("Error during game join: ${joinGamePacket.debugMessage} (${joinGamePacket.returnCode})");
+    }
+    return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret]);
+  }
+
+  Future connectMatch(String roomId, ConnectionCredentials credentials) async {
     if (credentials == null) {
-      _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomName }));
+      if (_lobbySocket == null) {
+        throw Exception("Tried to connect to a match without credentials, and without means of getting it.");
+      }
 
-      var joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame);
-      credentials = ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret]);
+      credentials = await getRoomCredentials(roomId);
     }
 
     _matchSocket = GameSocket.fromCredentials(credentials);
@@ -72,7 +95,7 @@ class Bot {
       if (parsed is OperationResponse && parsed.code == OperationCode.Authenticate) {
         print('auth');
         _matchSocket.add((OperationRequest(OperationCode.JoinGame, {
-          ParameterCode.RoomName: roomName,
+          ParameterCode.RoomName: roomId,
           ParameterCode.Broadcast: true,
           ParameterCode.PlayerProperties: {
             'teamNumber': SizedInt.byte(0),
@@ -124,5 +147,5 @@ class Bot {
     });
   }
 
-  Future disconnectMatch() async => await _lobbySocket.close();
+  Future disconnectMatch() async => await _matchSocket.close();
 }
