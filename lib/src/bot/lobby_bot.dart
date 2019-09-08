@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:core';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
-import 'package:bullet_force_hax/src/bot/gamesocket.dart';
 
 import 'connection_details.dart';
+import 'gamesocket.dart';
 
-class Bot {
+class LobbyBot {
   Map<String, GameListItem> games = Map();
 
   StreamController<GameListItem> _gamesController = StreamController<GameListItem>();
@@ -15,8 +14,6 @@ class Bot {
   Stream<GameListItem> get newGamesStream => _newGamesController.stream;  // TODO: implement pause/resume?
 
   GameSocket _lobbySocket;
-  GameSocket _matchSocket;
-
   Completer<void> _getRoomCompleter;
 
   Future connectLobby() async {
@@ -62,7 +59,7 @@ class Bot {
   }
 
   Future disconnectLobby() async => await _lobbySocket.close();
-  
+
   Future<ConnectionCredentials> getRoomCredentials(String roomId) async {
     // wait until previous join request is done
     while (_getRoomCompleter != null) {
@@ -80,72 +77,4 @@ class Bot {
     }
     return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret]);
   }
-
-  Future connectMatch(String roomId, ConnectionCredentials credentials) async {
-    if (credentials == null) {
-      if (_lobbySocket == null) {
-        throw Exception("Tried to connect to a match without credentials, and without means of getting it.");
-      }
-
-      credentials = await getRoomCredentials(roomId);
-    }
-
-    _matchSocket = GameSocket.fromCredentials(credentials);
-    _matchSocket.packets.listen((parsed) {
-      if (parsed is OperationResponse && parsed.code == OperationCode.Authenticate) {
-        print('auth');
-        _matchSocket.add((OperationRequest(OperationCode.JoinGame, {
-          ParameterCode.RoomName: roomId,
-          ParameterCode.Broadcast: true,
-          ParameterCode.PlayerProperties: {
-            'teamNumber': SizedInt.byte(0),
-            'rank': SizedInt.byte(100),
-            'killstreak': SizedInt.byte(0),
-            'characterCamo': SizedInt.byte(0),
-            'unlockedweapons': ProtocolArray(DataType.Integer, [SizedInt.int(0x14200), SizedInt.int(0)]),
-            'model': SizedInt.byte(1),
-            'perks': List.generate(8, (i) => SizedInt.int(0)).toList(),
-            // SizedInt.byte(255): Random.secure().nextInt(1000).toString(),
-            SizedInt.byte(255): 'MyPlayerName',
-          },
-        })));
-      }
-      else if (parsed is Event && parsed.code == EventCode.Join) {
-        var myActorId = (parsed.params[ParameterCode.ActorNr] as SizedInt).value;
-        _matchSocket.add(OperationRequest(OperationCode.RaiseEvent, {
-          ParameterCode.Code: SizedInt.byte(202),
-          ParameterCode.Cache: SizedInt.byte(4),
-          ParameterCode.Data: {
-            SizedInt.byte(0): 'PlayerBody',
-            SizedInt.byte(6): SizedInt.int(-41875289),
-            SizedInt.byte(7): SizedInt.int(11001),
-          },
-        }));
-        _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
-          ParameterCode.ActorNr: SizedInt.int(myActorId),
-          ParameterCode.Broadcast: true,
-          ParameterCode.Properties: {
-            SizedInt.byte(255): 'MyPlayerName',
-          },
-        }));
-        _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
-          ParameterCode.ActorNr: SizedInt.int(myActorId),
-          ParameterCode.Broadcast: true,
-          ParameterCode.Properties: {
-            'teamNumber': SizedInt.byte(0),
-            'rank': SizedInt.byte(100),
-            'killstreak': SizedInt.byte(0),
-            'characterCamo': SizedInt.byte(0),
-            'unlockedweapons': ProtocolArray(DataType.Integer, [SizedInt.int(82432), SizedInt.int(0)]), //  ProtocolArray 105: [int32 82432, int32 0],
-            'model': SizedInt.byte(1),
-            'perks': List.generate(8, (i) => SizedInt.int(0)).toList(),
-            // SizedInt.byte(255): Random.secure().nextInt(1000).toString(),
-            SizedInt.byte(255): 'MyPlayerName',
-          },
-        }));
-      }
-    });
-  }
-
-  Future disconnectMatch() async => await _matchSocket.close();
 }

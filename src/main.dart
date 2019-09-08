@@ -26,22 +26,23 @@ Future main(List<String> arguments) async {
 
 Future doBot() async {
   print('initializing');
-  var bot = Bot();
+  var lobbyBot = LobbyBot();
 
   print('establishing connection to lobby');
-  await bot.connectLobby();
+  await lobbyBot.connectLobby();
 
   print('Finding match to join');
-  var game = await bot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
+  var game = await lobbyBot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
 
   print('getting room credentials');
-  var credentials = await bot.getRoomCredentials(game.roomId);
+  var credentials = await lobbyBot.getRoomCredentials(game.roomId);
+
+  print('disconnecting from lobby');
+  await lobbyBot.disconnectLobby();
 
   print('connecting to match');
-  await bot.connectMatch(game.roomId, credentials);
-
-  print('connected to match, disconnecting from lobby');
-  await bot.disconnectLobby();
+  var gameplayBot = GameplayBot();
+  await gameplayBot.connectMatch(game.roomId, credentials);
 
   print('waiting 10 seconds');
   await Future.delayed(Duration(seconds: 10));
