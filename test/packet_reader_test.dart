@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
-import 'package:bullet_force_hax/src/typed_wrappers/basic_game_info.dart';
+import 'package:bullet_force_hax/src/typed_wrappers/listed_game_info.dart';
 import 'package:bullet_force_hax/src/typed_wrappers/player_properties.dart';
 import 'package:test/test.dart';
 
@@ -80,8 +80,8 @@ void main() {
       expect(testProps, newProps);
     });
 
-    test('$BasicGameInfo', () {
-      var testGame = BasicGameInfo()
+    test('$ListedGameInfo', () {
+      var testGame = ListedGameInfo()
       ..roomName = "TestRoom"
       ..password = "TestPassword"
       ..password = "TestPassword"
@@ -99,7 +99,7 @@ void main() {
       var map = testGame.toMap();
       var bytes = (ProtocolWriter()..writeValue(map)).toBytes();
       var newMap = ProtocolReader(bytes).readValue();
-      var newProps = BasicGameInfo.fromMap(newMap as Map);
+      var newProps = ListedGameInfo.fromMap(newMap as Map);
       expect(testGame, newProps);
     });
   });
