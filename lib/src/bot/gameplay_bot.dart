@@ -35,7 +35,7 @@ class GameplayBot {
           ParameterCode.Data: {
             SizedInt.byte(0): 'PlayerBody',
             SizedInt.byte(6): SizedInt.int(-41875289),
-            SizedInt.byte(7): SizedInt.int(11001),
+            SizedInt.byte(7): SizedInt.int(myActorId * 1000 + 1), // this value can crash other clients
           },
         }));
         _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
