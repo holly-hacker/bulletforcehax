@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
+import 'package:synchronized/synchronized.dart';
 
 import 'connection_details.dart';
 import 'gamesocket.dart';
@@ -14,7 +15,9 @@ class LobbyBot {
   Stream<GameListItem> get newGamesStream => _newGamesController.stream;  // TODO: implement pause/resume?
 
   GameSocket _lobbySocket;
-  Completer<void> _getRoomCompleter;
+
+  var _roomJoinLock = Lock();
+  var _roomCreateLock = Lock();
 
   Future connectLobby() async {
     var credentials = await _getLobbyCredentials();
@@ -61,17 +64,14 @@ class LobbyBot {
   Future disconnectLobby() async => await _lobbySocket.close();
 
   Future<ConnectionCredentials> getRoomCredentials(String roomId) async {
-    // wait until previous join request is done
-    while (_getRoomCompleter != null) {
-      await _getRoomCompleter.future;
-    }
+    OperationResponse joinGamePacket;
 
-    _getRoomCompleter = Completer();
-    await _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
+    await _roomCreateLock.synchronized(() async {
+      await _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
 
-    var joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame) as OperationResponse;
-    _getRoomCompleter.complete();
-    _getRoomCompleter = null;
+      joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame) as OperationResponse;
+    });
+
     if (joinGamePacket.returnCode != 0) {
       throw Exception("Error during game join: ${joinGamePacket.debugMessage} (${joinGamePacket.returnCode})");
     }

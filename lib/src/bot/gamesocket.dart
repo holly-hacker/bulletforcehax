@@ -3,6 +3,7 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
+import 'package:synchronized/synchronized.dart';
 
 import '../utils/cancellable_interval_stream.dart';
 import 'connection_details.dart';
@@ -35,6 +36,7 @@ class GameSocket {
   
   bool _opened = false;
   bool _closed = false;
+  var _connectLock = Lock();
 
   GameSocket.initial() : this.fromCredentials(ConnectionCredentials("ws://$endpointHost:$httpPort"));
 
@@ -47,48 +49,50 @@ class GameSocket {
   }
 
   Future connect() async {
-    if (_opened) {
-      return;
-    }
+    await _connectLock.synchronized(() async {
+      if (_opened) {
+        return;
+      }
 
-    _opened = true;
-    _socket = await connectSocket(_credentials.host, _credentials.port, protocol);
-    _socket.handleError((error) {
-      print('encountered an error! $error');
-    });
+      _opened = true;
+      _socket = await connectSocket(_credentials.host, _credentials.port, protocol);
+      _socket.handleError((error) {
+        print('encountered an error! $error');
+      });
 
-    _listenSub = _socket.map((data) => ProtocolReader(data).readPacket()).listen((data) {
-      if (data is InitResponse) {
-        add(_getPing());
+      _listenSub = _socket.map((data) => ProtocolReader(data).readPacket()).listen((data) {
+        if (data is InitResponse) {
+          add(_getPing());
 
-        if (_credentials.hasSecret) {
-          add(OperationRequest(OperationCode.Authenticate, {
-            ParameterCode.Secret: _credentials.secret,
-          }));
+          if (_credentials.hasSecret) {
+            add(OperationRequest(OperationCode.Authenticate, {
+              ParameterCode.Secret: _credentials.secret,
+            }));
+          }
+          else {
+            add(OperationRequest(OperationCode.Authenticate, {
+              ParameterCode.AppVersion: applicationVersion,
+              ParameterCode.ApplicationId: applicationId,
+              ParameterCode.AzureNodeInfo: region,
+            }));
+          }
+        }
+        else if (data is InternalOperationResponse && data.code == InternalOperationCode.Ping) {
+          // param 1 = sent time, param 2 = server time
+          _serverTickOffset = (data.params[2] as SizedInt).value - _tickCount;  // TODO: check, should prob use lerp(_ticks, _tickWhenSent)
         }
         else {
-          add(OperationRequest(OperationCode.Authenticate, {
-            ParameterCode.AppVersion: applicationVersion,
-            ParameterCode.ApplicationId: applicationId,
-            ParameterCode.AzureNodeInfo: region,
-          }));
+          // we don't handle this packet, pass it to the consumer
+          _packetController.add(data);
         }
-      }
-      else if (data is InternalOperationResponse && data.code == InternalOperationCode.Ping) {
-        // param 1 = sent time, param 2 = server time
-        _serverTickOffset = (data.params[2] as SizedInt).value - _tickCount;  // TODO: check, should prob use lerp(_ticks, _tickWhenSent)
-      }
-      else {
-        // we don't handle this packet, pass it to the consumer
-        _packetController.add(data);
-      }
-    });
+      });
 
-    _pingSub = getIntervalStream().listen((_) {
-      if (DateTime.now().difference(_lastPing).inMilliseconds > pingInterval) {
-        add(_getPing());
-        _lastPing = DateTime.now();
-      }
+      _pingSub = getIntervalStream().listen((_) {
+        if (DateTime.now().difference(_lastPing).inMilliseconds > pingInterval) {
+          add(_getPing());
+          _lastPing = DateTime.now();
+        }
+      });
     });
   }
 
