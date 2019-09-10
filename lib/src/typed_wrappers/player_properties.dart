@@ -15,6 +15,17 @@ class PlayerProperties {
 
   PlayerProperties();
 
+  PlayerProperties.initial() {
+    name = "Player";
+    rank = 1;
+    teamNumber = 10;  // should be spectator
+    unlockedWeapons = [0x14200, 0];
+    killStreak = 0;
+    perks = Uint8List(8);
+    model = 1;
+    characterCamo = 0;
+  }
+
   PlayerProperties.fromMap(Map<Object, Object> map) {
     characterCamo = (map['characterCamo'] as SizedInt).value;
     unlockedWeapons = (map['unlockedweapons'] as ProtocolArray).data.cast<SizedInt>().map((d) => d.value).toList();
