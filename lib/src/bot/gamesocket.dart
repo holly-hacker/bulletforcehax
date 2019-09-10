@@ -55,6 +55,8 @@ class GameSocket {
       }
 
       _opened = true;
+      var authCompleter = Completer();
+      var authFuture = authCompleter.future;
       _socket = await connectSocket(_credentials.host, _credentials.port, protocol);
       _socket.handleError((error) {
         print('encountered an error! $error');
@@ -62,15 +64,15 @@ class GameSocket {
 
       _listenSub = _socket.map((data) => ProtocolReader(data).readPacket()).listen((data) {
         if (data is InitResponse) {
-          add(_getPing());
+          _addNoConnect(_getPing());
 
           if (_credentials.hasSecret) {
-            add(OperationRequest(OperationCode.Authenticate, {
+            _addNoConnect(OperationRequest(OperationCode.Authenticate, {
               ParameterCode.Secret: _credentials.secret,
             }));
           }
           else {
-            add(OperationRequest(OperationCode.Authenticate, {
+            _addNoConnect(OperationRequest(OperationCode.Authenticate, {
               ParameterCode.AppVersion: applicationVersion,
               ParameterCode.ApplicationId: applicationId,
               ParameterCode.AzureNodeInfo: region,
@@ -82,6 +84,10 @@ class GameSocket {
           _serverTickOffset = (data.params[2] as SizedInt).value - _tickCount;  // TODO: check, should prob use lerp(_ticks, _tickWhenSent)
         }
         else {
+          if (data is OperationResponse && data.code == OperationCode.Authenticate) {
+            authCompleter.complete();
+          }
+          
           // we don't handle this packet, pass it to the consumer
           _packetController.add(data);
         }
@@ -89,10 +95,15 @@ class GameSocket {
 
       _pingSub = getIntervalStream().listen((_) {
         if (DateTime.now().difference(_lastPing).inMilliseconds > pingInterval) {
-          add(_getPing());
+          _addNoConnect(_getPing());
           _lastPing = DateTime.now();
         }
       });
+
+      // wait for auth
+      if (_credentials.hasSecret) {
+        await authFuture;
+      }
     });
   }
 
@@ -107,6 +118,10 @@ class GameSocket {
 
   Future add(PacketWithPayload pwp) async {
     await connect();
+    _addNoConnect(pwp);
+  }
+
+  void _addNoConnect(PacketWithPayload pwp) {
     _socket.add((ProtocolWriter()..writePacket(pwp)).toBytes());
   }
 
