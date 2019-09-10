@@ -101,7 +101,10 @@ class GameSocket {
     }
   }
 
-  void add(PacketWithPayload pwp) => _socket.add((ProtocolWriter()..writePacket(pwp)).toBytes());
+  Future add(PacketWithPayload pwp) async {
+    await connect();
+    _socket.add((ProtocolWriter()..writePacket(pwp)).toBytes());
+  }
 
   PacketWithPayload _getPing() => InternalOperationRequest(InternalOperationCode.Ping, {1: SizedInt.int(_tickCount)});
 }

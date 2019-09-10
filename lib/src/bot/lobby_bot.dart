@@ -37,7 +37,7 @@ class LobbyBot {
     _lobbySocket.packets.listen((parsed) async {
       if (parsed is OperationResponse && parsed.code == OperationCode.Authenticate) {
         // we're authenticated, join the lobby
-        _lobbySocket.add(OperationRequest(OperationCode.JoinLobby, {}));
+        await _lobbySocket.add(OperationRequest(OperationCode.JoinLobby, {}));
       }
       else if (parsed is Event && (parsed.code == EventCode.GameList || parsed.code == EventCode.GameListUpdate)) {
         var map = parsed.params[ParameterCode.GameList] as Map<Object, Object>;
@@ -67,7 +67,7 @@ class LobbyBot {
     }
 
     _getRoomCompleter = Completer();
-    _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
+    await _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
 
     var joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame) as OperationResponse;
     _getRoomCompleter.complete();
@@ -75,6 +75,6 @@ class LobbyBot {
     if (joinGamePacket.returnCode != 0) {
       throw Exception("Error during game join: ${joinGamePacket.debugMessage} (${joinGamePacket.returnCode})");
     }
-    return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret]);
+    return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret], roomId);
   }
 }

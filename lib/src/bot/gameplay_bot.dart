@@ -15,10 +15,10 @@ class GameplayBot {
 
   Future connectMatch(String roomId, ConnectionCredentials credentials) async {
     _matchSocket = GameSocket.fromCredentials(credentials);
-    _matchSocket.packets.listen((parsed) {
+    _matchSocket.packets.listen((parsed) async {
       if (parsed is OperationResponse && parsed.code == OperationCode.Authenticate) {
         print('auth');
-        _matchSocket.add((OperationRequest(OperationCode.JoinGame, {
+        await _matchSocket.add((OperationRequest(OperationCode.JoinGame, {
           ParameterCode.RoomName: roomId,
           ParameterCode.Broadcast: true,
           ParameterCode.PlayerProperties: _ourPlayer.toMap(),
@@ -38,7 +38,7 @@ class GameplayBot {
       }
       else if (parsed is Event && parsed.code == EventCode.Join) {
         var myActorId = (parsed.params[ParameterCode.ActorNr] as SizedInt).value;
-        _matchSocket.add(OperationRequest(OperationCode.RaiseEvent, {
+        await _matchSocket.add(OperationRequest(OperationCode.RaiseEvent, {
           ParameterCode.Code: SizedInt.byte(202),
           ParameterCode.Cache: SizedInt.byte(4),
           ParameterCode.Data: {
@@ -47,14 +47,14 @@ class GameplayBot {
             SizedInt.byte(7): SizedInt.int(myActorId * 1000 + 1), // this value can crash other clients
           },
         }));
-        _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
+        await _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
           ParameterCode.ActorNr: SizedInt.int(myActorId),
           ParameterCode.Broadcast: true,
           ParameterCode.Properties: {
             SizedInt.byte(255): _ourPlayer.name,
           },
         }));
-        _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
+        await _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
           ParameterCode.ActorNr: SizedInt.int(myActorId),
           ParameterCode.Broadcast: true,
           ParameterCode.Properties: _ourPlayer.toMap(),
