@@ -20,17 +20,17 @@ class GameProperties extends BasicGameInfo {
 
   GameProperties.fromMap(Map<Object, Object> map) : super.fromMap(map) {
     bannedWeaponMessage = map['bannedweaponmessage'];
-    gunGamePreset = (map['gunGamePreset'] as SizedInt).value;
-    hostId = (map[SizedInt.byte(248)] as SizedInt).value;
+    gunGamePreset = (map['gunGamePreset'] as SizedInt)?.value;
+    hostId = (map[SizedInt.byte(248)] as SizedInt)?.value;
     field249 = map[SizedInt.byte(249)];
-    field250 = (map[SizedInt.byte(250)] as ProtocolArray).data.cast<String>();
+    field250 = (map[SizedInt.byte(250)] as ProtocolArray)?.data?.cast<String>();
     field254 = map[SizedInt.byte(254)];
-    matchCountdownTime = (map['matchCountdownTime'] as SizedFloat).value;
+    matchCountdownTime = (map['matchCountdownTime'] as SizedFloat)?.value;
     matchStarted = map['matchStarted'];
-    maxPing = (map['maxPing'] as SizedInt).value;
+    maxPing = (map['maxPing'] as SizedInt)?.value;
     roundStarted = map['roundStarted'];
-    scoreLimit = (map['scorelimit'] as SizedInt).value;
-    timeScale = (map['timeScale'] as SizedFloat).value;
+    scoreLimit = (map['scorelimit'] as SizedInt)?.value;
+    timeScale = (map['timeScale'] as SizedFloat)?.value;
   }
 
   Map<Object, Object> toMap() {

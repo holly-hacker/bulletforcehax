@@ -23,15 +23,15 @@ abstract class BasicGameInfo {  // GameProperties extends from this?
   BasicGameInfo.fromMap(Map<Object, Object> map) {
     field253 = map[SizedInt.byte(253)];
     modeName = map['modeName'];
-    averageRank = (map['averagerank'] as SizedInt).value;
+    averageRank = (map['averagerank'] as SizedInt)?.value;
     switchingMap = map['switchingmap'];
     roomName = map['roomName'];
-    allowedWeapons = (map['allowedweapons'] as ProtocolArray).data.cast<SizedInt>().map((d) => d.value).toList();
-    eventCode = (map['eventcode'] as SizedInt).value;
+    allowedWeapons = (map['allowedweapons'] as ProtocolArray)?.data?.cast<SizedInt>()?.map((d) => d.value)?.toList();
+    eventCode = (map['eventcode'] as SizedInt)?.value;
     dedicated = map['dedicated'];
     password = map['password'];
     mapName = map['mapName'];
-    _field255 = (map[SizedInt.byte(255)] as SizedInt).value;
+    _field255 = (map[SizedInt.byte(255)] as SizedInt)?.value;
   }
 
   Map<Object, Object> toMap() {

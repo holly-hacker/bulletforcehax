@@ -27,14 +27,14 @@ class PlayerProperties {
   }
 
   PlayerProperties.fromMap(Map<Object, Object> map) {
-    characterCamo = (map['characterCamo'] as SizedInt).value;
-    unlockedWeapons = (map['unlockedweapons'] as ProtocolArray).data.cast<SizedInt>().map((d) => d.value).toList();
-    rank = (map['rank'] as SizedInt).value;
-    killStreak = (map['killstreak'] as SizedInt).value;
+    characterCamo = (map['characterCamo'] as SizedInt)?.value;
+    unlockedWeapons = (map['unlockedweapons'] as ProtocolArray)?.data?.cast<SizedInt>()?.map((d) => d.value)?.toList();
+    rank = (map['rank'] as SizedInt)?.value;
+    killStreak = (map['killstreak'] as SizedInt)?.value;
     perks = map['perks'];
-    teamNumber = (map['teamNumber'] as SizedInt).value;
+    teamNumber = (map['teamNumber'] as SizedInt)?.value;
     name = map[SizedInt.byte(255)];
-    model = (map['model'] as SizedInt).value;
+    model = (map['model'] as SizedInt)?.value;
   }
 
   Map<Object, Object> toMap() {

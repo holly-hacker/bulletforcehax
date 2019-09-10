@@ -162,4 +162,11 @@ void main() {
       expect(testGame, newProps);
     });
   });
+  
+  group("TypedWrappers don't crash on missing values", () {
+    // TODO: also do .toMap
+    test('$PlayerProperties', () { PlayerProperties.fromMap({}); });
+    test('$ListedGameInfo', () { ListedGameInfo.fromMap({}); });
+    test('$GameProperties', () { GameProperties.fromMap({}); });
+  });
 }
