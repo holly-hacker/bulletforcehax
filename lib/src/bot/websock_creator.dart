@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
 import 'dart:typed_data';
 
 Future<WebSocket> connectSocket(String host, int port, String protocol) async {
@@ -28,7 +27,7 @@ Future<WebSocket> connectSocket(String host, int port, String protocol) async {
   socket.add(utf8.encode(reqString));
 
   // Completer to convert reactive callback to future, because
-  var c = Completer<List<int>>();
+  var c = Completer<Uint8List>();
   var done = false;
   var sub = socket.listen((data) {
     if (done) return;
@@ -72,7 +71,9 @@ int findPattern<T>(List<T> haystack, List<T> needle) {
 }
 
 // The following code is taken and adapted from the dart SDK
-// See: https://github.com/dart-lang/sdk/blob/master/sdk/lib/_http/http_parser.dart
+// See:
+// - https://github.com/dart-lang/sdk/blob/master/sdk/lib/_http/http_parser.dart
+// - https://github.com/dart-lang/sdk/blob/master/sdk/lib/_http/http_impl.dart
 
 /*
 Copyright 2012, the Dart project authors.
@@ -109,9 +110,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// It does so by overriding pause/resume, so that once the
 /// _HttpDetachedStreamSubscription is resumed, it'll deliver the data before
 /// resuming the underlying subscription.
-class _HttpDetachedStreamSubscription implements StreamSubscription<List<int>> {
-  StreamSubscription<List<int>> _subscription;
-  List<int> _injectData;
+class _HttpDetachedStreamSubscription implements StreamSubscription<Uint8List> {
+  StreamSubscription<Uint8List> _subscription;
+  Uint8List _injectData;
   bool _isCanceled = false;
   int _pauseCount = 1;
   Function _userOnData;
@@ -183,13 +184,13 @@ class _HttpDetachedStreamSubscription implements StreamSubscription<List<int>> {
   }
 }
 
-class _HttpDetachedIncoming extends Stream<List<int>> {
-  final StreamSubscription<List<int>> subscription;
-  final List<int> bufferedData;
+class _HttpDetachedIncoming extends Stream<Uint8List> {
+  final StreamSubscription<Uint8List> subscription;
+  final Uint8List bufferedData;
 
   _HttpDetachedIncoming(this.subscription, this.bufferedData);
 
-  StreamSubscription<List<int>> listen(void onData(List<int> event),
+  StreamSubscription<Uint8List> listen(void onData(Uint8List event),
       {Function onError, void onDone(), bool cancelOnError}) {
     if (subscription != null) {
       subscription
@@ -203,20 +204,20 @@ class _HttpDetachedIncoming extends Stream<List<int>> {
           subscription, bufferedData, onData)
         ..resume();
     } else {
-      return Stream<List<int>>.fromIterable([bufferedData]).listen(onData,
+      return Stream<Uint8List>.fromIterable([bufferedData]).listen(onData,
           onError: onError, onDone: onDone, cancelOnError: cancelOnError);
     }
   }
 }
 
-class _DetachedSocket extends Stream<List<int>> implements Socket {
-  final Stream<List<int>> _incoming;
+class _DetachedSocket extends Stream<Uint8List> implements Socket {
+  final Stream<Uint8List> _incoming;
   final Socket _socket;
 
   _DetachedSocket(this._socket, this._incoming);
 
 
-  StreamSubscription<List<int>> listen(void onData(List<int> event),
+  StreamSubscription<Uint8List> listen(void onData(Uint8List event),
       {Function onError, void onDone(), bool cancelOnError}) {
     return _incoming.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
