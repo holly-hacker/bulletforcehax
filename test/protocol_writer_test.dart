@@ -82,13 +82,19 @@ void main() {
       expect(buffer, Uint8List.fromList([0x64, 0x40, 0x2a, 0xbd, 0x70, 0xa3, 0xd7, 0x0a, 0x3d]));
     });
 
-    // TODO: add unicode test
     test('can write strings', () {
       var writer = ProtocolWriter()
         ..writeValue('abc');
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
+    });
+    test('can write unicode strings', () {
+      var writer = ProtocolWriter()
+        ..writeValue("abc»d");
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([0x73, 0x00, 0x06, 0x61, 0x62, 0x63, 0xc2, 0xbb, 0x64]));
     });
 
     test('can write byte[]', () {
