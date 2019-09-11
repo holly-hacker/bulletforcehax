@@ -1,8 +1,8 @@
 import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 
+import '../Models/packet_handler.dart';
 import '../Services/js_interop_service.dart';
-import '../Services/packet_handler_service.dart';
 
 @Component(
   selector: 'game',
@@ -16,9 +16,11 @@ class GameComponent implements OnInit {
   var name = 'Bullet Force Hax';
 
   JsInteropService jsInterop;
-  PacketHandlerService handler;
+  PacketHandler handler;
 
-  GameComponent(this.jsInterop, this.handler);
+  GameComponent(this.jsInterop) {
+    handler = PacketHandler(jsInterop);
+  }
 
   void ngOnInit() {
     jsInterop.hookWebSock(handler.handleBufferSend, handler.handleBufferRecv);
