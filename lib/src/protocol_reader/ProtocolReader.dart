@@ -51,7 +51,7 @@ class ProtocolReader extends ByteDataReader {
 
     switch (type) {
       case PacketType.Init: break;
-      case PacketType.InitResponse: break;
+      case PacketType.InitResponse: return InitResponse.read(this);
       case PacketType.Operation: return OperationRequest.read(this);
       case PacketType.OperationResponse: return OperationResponse.read(this);
       case PacketType.Event: return Event.read(this);

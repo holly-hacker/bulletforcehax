@@ -9,12 +9,41 @@ Packets are generally instances of Event, OperationRequest or OperationResponse.
 
 Other packet types are Init, InitResponse, InternalOperationRequest, InternalOperationResponse, Message and RawMessage
 
+### InternalOperationRequest
+
+#### 1: Ping
+Sent params are:
+- 1: Your current time. This just get echo'd back along with the server time.
+
+### InternalOperationResponse
+
+#### 1: Ping
+Received params are:
+- 1: Original parameter 1 from request
+- 2: The time of the server
+
 ### OperationRequest
 Sent from client to server, usually expects a OperationResponse or Event (in the case of RaiseEvent) in return.
 
 #### 226: JoinGame
 
 `OperationRequest 226: {255: 7328cad7-9945-4ce8-a95f-f75f10af5097, 249: {teamNumber: int8 0, rank: int8 5, killstreak: int8 0, characterCamo: int8 0, unlockedweapons: ProtocolArray 105: [int32 82432, int32 0], model: int8 1, perks: [0, 0, 0, 0, 0, 0, 0, 0], int8 255: (H) SandwichHax}, 250: true}`
+```
+OperationRequest 226: {
+    255: 07fac636-8cfc-4535-9f71-b28014571407,
+    249: {
+        teamNumber: int8 0,
+        rank: int8 6,
+        killstreak: int8 0,
+        characterCamo: int8 0,
+        unlockedweapons: ProtocolArray 105: [int32 82432, int32 0],
+        model: int8 1,
+        perks: [0, 0, 0, 0, 0, 0, 0, 0],
+        int8 255: (H) SandwichHax
+    },
+    250: true
+}
+```
 
 #### 227: CreateGame
 
@@ -55,6 +84,12 @@ Fields for full request:
   - int8 249: true
 - CleanupCacheOnLeave (241): true
 
+
+#### 230: Authenticate
+Params for load balancing server:
+- 220: AppVersion, eg. `1.34_WebGL_1.73`
+- 224: ApplicationId, application-unique guid
+- 210: AzureNodeInfo, seems to be region?
 
 #### 252: SetProperties
 On match join: `OperationRequest 252: {251: {matchCountdownTime: float32 0, eventcode: int32 0, timeScale: float32 1, password: sdfgdfh, modeName: Conquest, averagerank: int32 0, roundStarted: false, roomName: DefaultMatch, mapName: City, maxPing: int16 700, bannedweaponmessage: This message should never appear!, dedicated: false, matchStarted: false, gunGamePreset: int32 0, allowedweapons: ProtocolArray 105: [int32 -1, int32 -1], scorelimit: int32 200, switchingmap: false}, 250: true}`
@@ -153,6 +188,12 @@ Fields on full request:
   - switchingmap: false
 - ActorList (252): ProtocolArray 105: [int32 1]
 
+
+#### 230: Authenticate
+Has Address (230), Secret (221), UserId (225), Nickname (196)
+
+UserId is a guid. When connected to load balancing server, Secret is used to authenticate on the game server.
+
 #### 255: Join
 Uses parameters ActorNr, ActorList, PlayerProperties and GameProperties.
 
@@ -172,7 +213,34 @@ Contains tickbase
 #### 229: GameListUpdate
 Contains a list of lobbies with information such as lobby name, lobby password (!), allowed weapons, map, average rank, amount of players, etc. The list of lobbies is a hashmap with the lobby's GUID as key.
 
+
+
 GameList contains a list of all lobbies, while GameListUpdate only contains changed lobbies.
+
+Example:
+```
+Event 230: {
+    222: {
+        eb66ecc5-1277-45e3-8096-8d4e31e44da5: {
+            int8 253: true,
+            int8 252: int8 1,
+            modeName: Gun Game,
+            averagerank: int32 73,
+            switchingmap: false,
+            roomName: outlaws,
+            allowedweapons: ProtocolArray 105: [int32 -1, int32 -1],
+            eventcode: int32 0,
+            dedicated: false,
+            password: stinky,
+            mapName: Woods,
+            int8 255: int8 4
+        },
+        ca3d05f5-a9ef-4e89-b07f-c8b2d750a4db: { ... },
+        22cb83db-631b-4f13-8fc2-d742f8f715e3: { ... },
+        ...
+    }
+}
+```
 
 #### 255: Join
 
@@ -347,7 +415,11 @@ Examples of parameters from server:
 - [int32 1001, false, null, int16 80, int16 3560, int16 3567, int16 0, int16 0, int16 193, int16 0, int16 0, int16 0, int16 0, int16 0, int16 10000, int8 0, int8 0, int8 0, int8 0, int8 8, int32 999, Vector3(16.558441162109375,31.58450698852539,45.3120002746582)]
 
 ### 202
+- 0: string, what to init?
+- 6: int, when to init, servertime
+- 7: int, actor id/actor nr?
 
+On match creation:
 - `OperationRequest 253: {244: int8 202, 245: {int8 0: PlayerBody, int8 6: int32 -1862770206, int8 7: int32 1001}, 247: int8 4}`
 - `OperationRequest 253: {244: int8 202, 245: {int8 0: Match Manager, int8 6: int32 -1862770198, int8 7: int32 1}, 247: int8 5}`
 
