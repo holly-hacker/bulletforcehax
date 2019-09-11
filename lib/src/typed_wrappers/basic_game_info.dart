@@ -16,7 +16,7 @@ abstract class BasicGameInfo {  // GameProperties extends from this?
   bool switchingMap;
   bool dedicated;
   int eventCode;
-  bool field253;  // TODO: what is this?
+  bool field253;
 
   BasicGameInfo();
 
