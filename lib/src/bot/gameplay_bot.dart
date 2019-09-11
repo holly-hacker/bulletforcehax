@@ -13,16 +13,36 @@ class GameplayBot {
   Map<int, PlayerProperties> _otherPlayers;
   GameProperties _gameProps;
 
-  Future connectMatch(String roomId, ConnectionCredentials credentials) async {
+  Future connectMatch(ConnectionCredentials credentials, [GameProperties newGameProps]) async {
+    assert(credentials.hasSecret);
+    assert(credentials.hasRoomId);
+
     _matchSocket = GameSocket.fromCredentials(credentials);
     _matchSocket.packets.listen((parsed) async {
       if (parsed is OperationResponse && parsed.code == OperationCode.Authenticate) {
         print('auth');
-        await _matchSocket.add((OperationRequest(OperationCode.JoinGame, {
-          ParameterCode.RoomName: roomId,
-          ParameterCode.Broadcast: true,
-          ParameterCode.PlayerProperties: _ourPlayer.toMap(),
-        })));
+        if (newGameProps != null) {
+          await _matchSocket.add((OperationRequest(OperationCode.CreateGame, {
+            ParameterCode.RoomName: credentials.roomId,
+            ParameterCode.PlayerProperties: {SizedInt.byte(255): ''}, // what
+            ParameterCode.Broadcast: true,
+            ParameterCode.GameProperties: newGameProps.toMap(),
+            ParameterCode.CleanupCacheOnLeave: true,
+          })));
+        }
+        else {
+          await _matchSocket.add(OperationRequest(OperationCode.JoinGame, {
+            ParameterCode.RoomName: credentials.roomId,
+            ParameterCode.Broadcast: true,
+            ParameterCode.PlayerProperties: _ourPlayer.toMap(),
+          }));
+        }
+      }
+      else if (parsed is OperationResponse && parsed.code == OperationCode.CreateGame) {
+        _ourActorNr = (parsed.params[ParameterCode.ActorNr] as SizedInt).value;
+
+        var gameProps = parsed.params[ParameterCode.GameProperties] as Map;
+        _gameProps = GameProperties.fromMap(gameProps);
       }
       else if (parsed is OperationResponse && parsed.code == OperationCode.JoinGame) {
         _ourActorNr = (parsed.params[ParameterCode.ActorNr] as SizedInt).value;

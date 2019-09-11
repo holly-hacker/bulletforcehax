@@ -415,7 +415,11 @@ Examples of parameters from server:
 - [int32 1001, false, null, int16 80, int16 3560, int16 3567, int16 0, int16 0, int16 193, int16 0, int16 0, int16 0, int16 0, int16 0, int16 10000, int8 0, int8 0, int8 0, int8 0, int8 8, int32 999, Vector3(16.558441162109375,31.58450698852539,45.3120002746582)]
 
 ### 202
+- 0: string, what to init?
+- 6: int, when to init, servertime
+- 7: int, actor id/actor nr?
 
+On match creation:
 - `OperationRequest 253: {244: int8 202, 245: {int8 0: PlayerBody, int8 6: int32 -1862770206, int8 7: int32 1001}, 247: int8 4}`
 - `OperationRequest 253: {244: int8 202, 245: {int8 0: Match Manager, int8 6: int32 -1862770198, int8 7: int32 1}, 247: int8 5}`
 

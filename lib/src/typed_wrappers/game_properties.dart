@@ -18,6 +18,32 @@ class GameProperties extends BasicGameInfo {
 
   GameProperties();
 
+  GameProperties.initial() {
+    field253 = true;
+    field254 = false;
+    field250 = ['roomName', 'mapName', 'modeName', 'password', 'dedicated', 'switchingmap', 'allowedweapons', 'eventcode', 'averagerank'];
+    roomName = "My Room Name";
+    mapName = "Urban";
+    modeName = "Conquest";
+    password = "My Password";
+    roundStarted = false;
+    maxPing = 700;
+    timeScale = 1;
+    dedicated = false;
+    scoreLimit = 200;
+    gunGamePreset = 0;
+    matchCountdownTime = 0;
+    matchStarted = false;
+    switchingMap = false;
+    allowedWeapons = [-1, -1];
+    bannedWeaponMessage = "This message should never appear!";
+    eventCode = 0;
+    averageRank = 1;
+    maxPlayerCount = 10;
+    field249 = true;
+    // NOTE: hostId (field 248) is not set on match creation, so we're not setting it here
+  }
+
   GameProperties.fromMap(Map<Object, Object> map) : super.fromMap(map) {
     bannedWeaponMessage = map['bannedweaponmessage'];
     gunGamePreset = (map['gunGamePreset'] as SizedInt)?.value;
@@ -37,7 +63,7 @@ class GameProperties extends BasicGameInfo {
     var map = super.toMap();
     map['bannedweaponmessage'] = bannedWeaponMessage;
     map['gunGamePreset'] = SizedInt.int(gunGamePreset);
-    map[SizedInt.byte(248)] = SizedInt.int(hostId);
+    if (hostId != null) map[SizedInt.byte(248)] = SizedInt.int(hostId); // TODO: use i32 function
     map[SizedInt.byte(249)] = field249;
     map[SizedInt.byte(250)] = ProtocolArray(DataType.String, field250);
     map[SizedInt.byte(254)] = field254;

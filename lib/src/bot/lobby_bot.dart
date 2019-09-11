@@ -66,7 +66,7 @@ class LobbyBot {
   Future<ConnectionCredentials> getRoomCredentials(String roomId) async {
     OperationResponse joinGamePacket;
 
-    await _roomCreateLock.synchronized(() async {
+    await _roomJoinLock.synchronized(() async {
       await _lobbySocket.add(OperationRequest(OperationCode.JoinGame, { ParameterCode.RoomName: roomId }));
 
       joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.JoinGame) as OperationResponse;
@@ -76,5 +76,20 @@ class LobbyBot {
       throw Exception("Error during game join: ${joinGamePacket.debugMessage} (${joinGamePacket.returnCode})");
     }
     return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret], roomId);
+  }
+
+  Future<ConnectionCredentials> createMatch() async {
+    OperationResponse joinGamePacket;
+
+    await _roomCreateLock.synchronized(() async {
+      await _lobbySocket.add(OperationRequest(OperationCode.CreateGame, {}));
+
+      joinGamePacket = await _lobbySocket.packets.firstWhere((packet) => packet is OperationResponse && packet.code == OperationCode.CreateGame) as OperationResponse;
+    });
+
+    if (joinGamePacket.returnCode != 0) {
+      throw Exception("Error during game join: ${joinGamePacket.debugMessage} (${joinGamePacket.returnCode})");
+    }
+    return ConnectionCredentials(joinGamePacket.params[ParameterCode.Address], joinGamePacket.params[ParameterCode.Secret], joinGamePacket.params[ParameterCode.RoomName]);
   }
 }

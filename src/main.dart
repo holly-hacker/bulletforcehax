@@ -19,36 +19,64 @@ Future main(List<String> arguments) async {
 
     var parsed = ProtocolReader(inputBytes).readPacket();
     print(parsed);
-  } else {
+  }
+  else if (arguments.isNotEmpty) {
+    await doBot(arguments[0]);
+  }
+  else {
+    print('no arguments specified, will connect to test match');
     await doBot();
   }
 }
 
-Future doBot() async {
+Future doBot([String action = 'jointestmatch']) async {
   print('initializing');
   var lobbyBot = LobbyBot();
 
   print('establishing connection to lobby');
   await lobbyBot.connectLobby();
 
-  print('Finding match to join');
-  var game = await lobbyBot.gamesStream.firstWhere((match) => match.roomName == "jj");
+  switch(action) {
+    case 'jointestmatch':
+    case 'creatematch':
+      ConnectionCredentials credentials;
+      GameProperties gameProps;
+      int waitTime;
+      if (action == 'jointestmatch') {
+        waitTime = 10;
 
-  print('getting room credentials');
-  var credentials = await lobbyBot.getRoomCredentials(game.roomId);
+        print('Finding match to join');
+        var game = await lobbyBot.gamesStream.firstWhere((match) => match.roomName == "HoLLyTest");
 
-  print('disconnecting from lobby');
-  await lobbyBot.disconnectLobby();
+        print('getting room credentials');
+        credentials = await lobbyBot.getRoomCredentials(game.roomId);
+      }
+      else if (action == 'creatematch') {
+        waitTime = 60;
+        gameProps = GameProperties.initial()
+          ..roomName = "HoLLyTest";
 
-  print('connecting to match');
-  var gameplayBot = GameplayBot();
-  await gameplayBot.connectMatch(game.roomId, credentials);
+        print('Requesting match creation');
+        credentials = await lobbyBot.createMatch();
+      }
 
-  print('waiting 10 seconds');
-  await Future.delayed(Duration(seconds: 10));
+      print('disconnecting from lobby');
+      await lobbyBot.disconnectLobby();
 
-  print('disconnecting from match');
-  await gameplayBot.disconnectMatch();
+      print('connecting to match');
+      var gameplayBot = GameplayBot();
+      await gameplayBot.connectMatch(credentials, gameProps);
+
+      print('waiting $waitTime seconds');
+      await Future.delayed(Duration(seconds: waitTime));
+
+      print('disconnecting from match');
+      await gameplayBot.disconnectMatch();
+      break;
+    default:
+      print("unknown action '$action'");
+      break;
+  }
 
   print('done');
 }
