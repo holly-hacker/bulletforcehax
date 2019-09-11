@@ -164,9 +164,9 @@ void main() {
   });
   
   group("TypedWrappers don't crash on missing values", () {
-    // TODO: also do .toMap
-    test('$PlayerProperties', () { PlayerProperties.fromMap({}); });
-    test('$ListedGameInfo', () { ListedGameInfo.fromMap({}); });
-    test('$GameProperties', () { GameProperties.fromMap({}); });
+    // TODO: check that fromMap.toMap returns the same result
+    test('$PlayerProperties', () { PlayerProperties.fromMap({}).toMap(); });
+    test('$ListedGameInfo', () { ListedGameInfo.fromMap({}).toMap(); });
+    test('$GameProperties', () { GameProperties.fromMap({}).toMap(); });
   });
 }

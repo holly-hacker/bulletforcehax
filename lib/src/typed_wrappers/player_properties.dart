@@ -40,7 +40,7 @@ class PlayerProperties {
   Map<Object, Object> toMap() {
     var map = Map<Object, Object>();
     map['characterCamo'] = u8(characterCamo);
-    map['unlockedweapons'] = ProtocolArray(DataType.Integer, unlockedWeapons.map((w) => s32(w)).toList());
+    if (unlockedWeapons != null) map['unlockedweapons'] = ProtocolArray(DataType.Integer, unlockedWeapons.map((w) => s32(w)).toList());
     map['rank'] = u8(rank);
     map['killstreak'] = u8(killStreak);
     map['perks'] = perks;

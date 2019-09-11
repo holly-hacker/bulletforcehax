@@ -41,7 +41,7 @@ abstract class BasicGameInfo {  // GameProperties extends from this?
     map['averagerank'] = s32(averageRank);
     map['switchingmap'] = switchingMap;
     map['roomName'] = roomName;
-    map['allowedweapons'] = ProtocolArray(DataType.Integer, allowedWeapons.map((i) => s32(i)).toList());
+    if (allowedWeapons != null) map['allowedweapons'] = ProtocolArray(DataType.Integer, allowedWeapons.map((i) => s32(i)).toList());
     map['eventcode'] = s32(eventCode);
     map['dedicated'] = dedicated;
     map['password'] = password;
