@@ -3,6 +3,11 @@ import '../ProtocolWriter.dart';
 import '../constants.dart';
 import 'Serializable.dart';
 
+SizedInt u8(int i) => i == null ? null : SizedInt(i, 1);
+SizedInt s16(int i) => i == null ? null : SizedInt(i, 2);
+SizedInt s32(int i) => i == null ? null : SizedInt(i, 4);
+SizedInt s64(int i) => i == null ? null : SizedInt(i, 8);
+
 class SizedInt implements Serializable {
   int value;
   int size;
@@ -10,11 +15,6 @@ class SizedInt implements Serializable {
   SizedInt(this.value, this.size) {
     _checkSize();
   }
-
-  SizedInt.byte(this.value)  { size = 1; _checkSize(); }
-  SizedInt.short(this.value) { size = 2; _checkSize(); }
-  SizedInt.int(this.value)   { size = 4; _checkSize(); }
-  SizedInt.long(this.value)  { size = 8; _checkSize(); }
 
   SizedInt.read(ProtocolReader reader, this.size) {
     switch(size) {

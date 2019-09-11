@@ -99,13 +99,19 @@ void main() {
       }
     });
 
-    // TODO: unicode test
     test('can read strings', () {
       var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
       var t = reader.readValue();
 
       expect(t.runtimeType, String);
       expect(t, "abc");
+    });
+    test('can read unicode strings', () {
+      var reader = ProtocolReader(Uint8List.fromList([0x73, 0x00, 0x06, 0x61, 0x62, 0x63, 0xc2, 0xbb, 0x64]));
+      var t = reader.readValue();
+
+      expect(t.runtimeType, String);
+      expect(t, "abc»d");
     });
 
     test('can read byte[]', () {
@@ -182,7 +188,7 @@ void main() {
       expect(t is Map<Object, Object>, isTrue); // cannot use runtimeType?
       if (t is Map<Object, Object>) {
         expect(t.length, 2);
-        expect(t[SizedInt.byte(0xFF)], null);
+        expect(t[u8(0xFF)], null);
         expect(t['abc'], true);
       }
     });

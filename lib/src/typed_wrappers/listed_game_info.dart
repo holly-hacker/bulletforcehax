@@ -8,12 +8,12 @@ class ListedGameInfo extends BasicGameInfo {
   ListedGameInfo();
 
   ListedGameInfo.fromMap(Map<Object, Object> map) : super.fromMap(map) {
-    playerCount = (map[SizedInt.byte(252)] as SizedInt)?.value;
+    playerCount = (map[u8(252)] as SizedInt)?.value;
   }
 
   Map<Object, Object> toMap() {
     var map = super.toMap();
-    map[SizedInt.byte(252)] = SizedInt.byte(playerCount);
+    map[u8(252)] = u8(playerCount);
     return map;
   }
 

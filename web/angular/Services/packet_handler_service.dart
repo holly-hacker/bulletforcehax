@@ -40,8 +40,8 @@ class PacketHandlerService {
           if (eventCode is SizedInt && eventData is Map<Object, Object>) {
             switch (eventCode.value) {
               case 200:
-                var code = eventData[SizedInt.byte(5)] as SizedInt;
-                var data = eventData[SizedInt.byte(4)];
+                var code = eventData[u8(5)] as SizedInt;
+                var data = eventData[u8(4)];
                 if (code == null) {
                   // what
                 }
@@ -63,14 +63,14 @@ class PacketHandlerService {
                   var data2 = data as List<Object>;
                   data2[0] = '[hax] [Sandwich] [FuckYou] ' + data2[0].toString(); // author
                   // data[1] == message
-                  data2[2] = SizedInt.short(0xFF); // R
-                  data2[3] = SizedInt.short(0x69); // G
-                  data2[4] = SizedInt.short(0xB4); // B
+                  data2[2] = s16(0xFF); // R
+                  data2[3] = s16(0x69); // G
+                  data2[4] = s16(0xB4); // B
                 }
                 print('>>> Event 200 code $code with data $data');
                 return [packet];
               case 201:
-                var data = eventData[SizedInt.short(10)] as List<Object>;
+                var data = eventData[s16(10)] as List<Object>;
                 // buffer = (ProtocolWriter()..writePacket(packet)).toBytes().buffer;
                 // writeStatus('Event 201: $data');
                 print('>>> Event 201 Sending our player info $data');
@@ -123,8 +123,8 @@ class PacketHandlerService {
         case 200:
           var actor = packet.params[ParameterCode.ActorNr];
           var eventData = packet.params[ParameterCode.CustomEventContent] as Map<Object, Object>;
-          var code = (eventData[SizedInt.byte(5)] as SizedInt).value;
-          var payload = eventData[SizedInt.byte(4)];  // can be null!
+          var code = (eventData[u8(5)] as SizedInt).value;
+          var payload = eventData[u8(4)];  // can be null!
           print('<<< Event 200: actor $actor, code $code, payload $payload');
 
           if (payload is List<Object>) {
@@ -134,7 +134,7 @@ class PacketHandlerService {
               // payload[4] = SizedFloat.float(50); // don't appear to receive damage
                 break;
               case 24:
-                if (state.actorNumber != null && payload[0] == SizedInt.int(state.actorNumber)) {
+                if (state.actorNumber != null && payload[0] == s32(state.actorNumber)) {
                   // writeStatus("Fuck death");
                   // return OperationResponse(66, "", 0, {}); // When the server tell you that you died, just ignore it ;)
                 }
@@ -146,7 +146,7 @@ class PacketHandlerService {
         case 201:
           var actor = packet.params[ParameterCode.ActorNr] as SizedInt;
           var eventData = packet.params[ParameterCode.CustomEventContent] as Map<Object, Object>;
-          var payload = eventData[SizedInt.short(10)];  // can be null!
+          var payload = eventData[s16(10)];  // can be null!
           print('<<< Event 201: actor $actor, payload $payload');
 
           if (payload is List<Object>) {
@@ -173,7 +173,7 @@ class PacketHandlerService {
         for (var playerId in players.keys.cast<SizedInt>()) {
           var player = state.getPlayer(playerId.value);
           var playerProps = players[playerId] as Map<Object, Object>;
-          player.name = playerProps[SizedInt.byte(255)];
+          player.name = playerProps[u8(255)];
         }
 
         writeStatus('Our actor nr is ${state.actorNumber}');

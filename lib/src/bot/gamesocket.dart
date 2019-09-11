@@ -125,5 +125,5 @@ class GameSocket {
     _socket.add((ProtocolWriter()..writePacket(pwp)).toBytes());
   }
 
-  PacketWithPayload _getPing() => InternalOperationRequest(InternalOperationCode.Ping, {1: SizedInt.int(_tickCount)});
+  PacketWithPayload _getPing() => InternalOperationRequest(InternalOperationCode.Ping, {1: s32(_tickCount)});
 }

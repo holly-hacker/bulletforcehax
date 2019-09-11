@@ -3,6 +3,9 @@ import '../ProtocolWriter.dart';
 import '../constants.dart';
 import 'Serializable.dart';
 
+SizedFloat f32(double d) => d == null ? null : SizedFloat(d, 4);
+SizedFloat f64(double d) => d == null ? null : SizedFloat(d, 8);
+
 class SizedFloat implements Serializable {
   double value;
   int size;
@@ -10,9 +13,6 @@ class SizedFloat implements Serializable {
   SizedFloat(this.value, this.size) {
     _checkSize();
   }
-
-  SizedFloat.float(this.value)  { size = 4; _checkSize(); }
-  SizedFloat.double(this.value) { size = 8; _checkSize(); }
 
   SizedFloat.read(ProtocolReader reader, this.size) {
     switch(size) {

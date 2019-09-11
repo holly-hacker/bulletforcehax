@@ -47,10 +47,10 @@ class GameProperties extends BasicGameInfo {
   GameProperties.fromMap(Map<Object, Object> map) : super.fromMap(map) {
     bannedWeaponMessage = map['bannedweaponmessage'];
     gunGamePreset = (map['gunGamePreset'] as SizedInt)?.value;
-    hostId = (map[SizedInt.byte(248)] as SizedInt)?.value;
-    field249 = map[SizedInt.byte(249)];
-    field250 = (map[SizedInt.byte(250)] as ProtocolArray)?.data?.cast<String>();
-    field254 = map[SizedInt.byte(254)];
+    hostId = (map[u8(248)] as SizedInt)?.value;
+    field249 = map[u8(249)];
+    field250 = (map[u8(250)] as ProtocolArray)?.data?.cast<String>();
+    field254 = map[u8(254)];
     matchCountdownTime = (map['matchCountdownTime'] as SizedFloat)?.value;
     matchStarted = map['matchStarted'];
     maxPing = (map['maxPing'] as SizedInt)?.value;
@@ -62,17 +62,17 @@ class GameProperties extends BasicGameInfo {
   Map<Object, Object> toMap() {
     var map = super.toMap();
     map['bannedweaponmessage'] = bannedWeaponMessage;
-    map['gunGamePreset'] = SizedInt.int(gunGamePreset);
-    if (hostId != null) map[SizedInt.byte(248)] = SizedInt.int(hostId); // TODO: use i32 function
-    map[SizedInt.byte(249)] = field249;
-    map[SizedInt.byte(250)] = ProtocolArray(DataType.String, field250);
-    map[SizedInt.byte(254)] = field254;
-    map['matchCountdownTime'] = SizedFloat.float(matchCountdownTime);
+    map['gunGamePreset'] = s32(gunGamePreset);
+    map[u8(248)] = s32(hostId);
+    map[u8(249)] = field249;
+    map[u8(250)] = ProtocolArray(DataType.String, field250);
+    map[u8(254)] = field254;
+    map['matchCountdownTime'] = f32(matchCountdownTime);
     map['matchStarted'] = matchStarted;
-    map['maxPing'] = SizedInt.short(maxPing);
+    map['maxPing'] = s16(maxPing);
     map['roundStarted'] = roundStarted;
-    map['scorelimit'] = SizedInt.int(scoreLimit);
-    map['timeScale'] = SizedFloat.float(timeScale);
+    map['scorelimit'] = s32(scoreLimit);
+    map['timeScale'] = f32(timeScale);
     return map;
   }
 

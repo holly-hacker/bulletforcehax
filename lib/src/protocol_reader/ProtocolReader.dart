@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
@@ -67,7 +68,7 @@ class ProtocolReader extends ByteDataReader {
   String readString() {
     var len = readUint16();
     if (len == 0) return '';
-    return String.fromCharCodes(read(len));
+    return utf8.decode(read(len));
   }
 
   Uint8List readByteArray() => read(readInt32());

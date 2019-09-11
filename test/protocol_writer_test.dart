@@ -36,7 +36,7 @@ void main() {
 
     test('can write u8', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedInt.byte(0x90));
+        ..writeValue(u8(0x90));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x62, 0x90]));
@@ -44,7 +44,7 @@ void main() {
 
     test('can write s16', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedInt.short(-1337));
+        ..writeValue(s16(-1337));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x6b, 0xFA, 0xC7]));
@@ -52,7 +52,7 @@ void main() {
 
     test('can write s32', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedInt.int(-559038737));
+        ..writeValue(s32(-559038737));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x69, 0xDE, 0xAD, 0xBE, 0xEF]));
@@ -60,7 +60,7 @@ void main() {
 
     test('can write s64', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedInt.long(-3886136854700967234));
+        ..writeValue(s64(-3886136854700967234));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x6c, 0xCA, 0x11, 0xAB, 0x1E, 0xCA, 0xFE, 0xBA, 0xBE]));
@@ -68,7 +68,7 @@ void main() {
 
     test('can write f32', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedFloat.float(42));
+        ..writeValue(f32(42));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x66, 0x42, 0x28, 0x00, 0x00]));
@@ -76,19 +76,25 @@ void main() {
 
     test('can write f64', () {
       var writer = ProtocolWriter()
-        ..writeValue(SizedFloat.double(13.37));
+        ..writeValue(f64(13.37));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x64, 0x40, 0x2a, 0xbd, 0x70, 0xa3, 0xd7, 0x0a, 0x3d]));
     });
 
-    // TODO: add unicode test
     test('can write strings', () {
       var writer = ProtocolWriter()
         ..writeValue('abc');
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x73, 0x00, 0x03, 0x61, 0x62, 0x63]));
+    });
+    test('can write unicode strings', () {
+      var writer = ProtocolWriter()
+        ..writeValue("abc»d");
+      var buffer = writer.toBytes();
+
+      expect(buffer, Uint8List.fromList([0x73, 0x00, 0x06, 0x61, 0x62, 0x63, 0xc2, 0xbb, 0x64]));
     });
 
     test('can write byte[]', () {
@@ -125,7 +131,7 @@ void main() {
 
     test('can read ObjectArray', () {
       var writer = ProtocolWriter()
-        ..writeValue(['abc', null, SizedInt.short(0x123)]);
+        ..writeValue(['abc', null, s16(0x123)]);
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([122, 0, 3, 115, 0, 3, 0x61, 0x62, 0x63, 42, 107, 0x01, 0x23]));
@@ -133,7 +139,7 @@ void main() {
 
     test('can write hashtable', () {
       var writer = ProtocolWriter()
-        ..writeValue({SizedInt.byte(0xFF): null, 'abc': true});
+        ..writeValue({u8(0xFF): null, 'abc': true});
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]));
@@ -166,9 +172,9 @@ void main() {
     test('packet 0x04: Event', () {
       var writer = ProtocolWriter()
         ..writePacket(Event(226, {
-          0xE3: SizedInt.int(223),
-          0xE4: SizedInt.int(70),
-          0xE5: SizedInt.int(364),
+          0xE3: s32(223),
+          0xE4: s32(70),
+          0xE5: s32(364),
         }));
       var buffer = writer.toBytes();
 
@@ -180,7 +186,7 @@ void main() {
     });
     test('packet 0x06: InternalOperationRequest', () {
       var writer = ProtocolWriter()
-        ..writePacket(InternalOperationRequest(1, {1: SizedInt.int(0x4CB99B22)}));
+        ..writePacket(InternalOperationRequest(1, {1: s32(0x4CB99B22)}));
       var buffer = writer.toBytes();
 
       expect(buffer, Uint8List.fromList([0xf3, 0x06, 0x01, 0x00, 0x01, 0x01, 0x69, 0x4c, 0xb9, 0x9b, 0x22]));
@@ -188,8 +194,8 @@ void main() {
     test('packet 0x07: InternalOperationResponse', () {
       var writer = ProtocolWriter()
         ..writePacket(InternalOperationResponse(1, null, 0, {
-          1: SizedInt.int(0x4CB99B22),
-          2: SizedInt.int(-0x60EC91A3),
+          1: s32(0x4CB99B22),
+          2: s32(-0x60EC91A3),
         }));
       var buffer = writer.toBytes();
 

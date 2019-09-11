@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
@@ -96,7 +97,7 @@ class ProtocolWriter extends ByteDataWriter {
   }
 
   writeString(String s) {
-    var bytes = s.codeUnits;  // TODO: this only works for ASCII text!
+    var bytes = utf8.encode(s);
     writeUint16(bytes.length);
     write(bytes);
   }
