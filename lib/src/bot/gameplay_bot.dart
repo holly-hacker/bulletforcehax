@@ -24,7 +24,7 @@ class GameplayBot {
         if (newGameProps != null) {
           await _matchSocket.add((OperationRequest(OperationCode.CreateGame, {
             ParameterCode.RoomName: credentials.roomId,
-            ParameterCode.PlayerProperties: {SizedInt.byte(255): ''}, // what
+            ParameterCode.PlayerProperties: {u8(255): ''}, // what
             ParameterCode.Broadcast: true,
             ParameterCode.GameProperties: newGameProps.toMap(),
             ParameterCode.CleanupCacheOnLeave: true,
@@ -59,23 +59,23 @@ class GameplayBot {
       else if (parsed is Event && parsed.code == EventCode.Join) {
         var myActorId = (parsed.params[ParameterCode.ActorNr] as SizedInt).value;
         await _matchSocket.add(OperationRequest(OperationCode.RaiseEvent, {
-          ParameterCode.Code: SizedInt.byte(202),
-          ParameterCode.Cache: SizedInt.byte(4),
+          ParameterCode.Code: u8(202),
+          ParameterCode.Cache: u8(4),
           ParameterCode.Data: {
-            SizedInt.byte(0): 'PlayerBody',
-            SizedInt.byte(6): SizedInt.int(-41875289),
-            SizedInt.byte(7): SizedInt.int(myActorId * 1000 + 1), // this value can crash other clients
+            u8(0): 'PlayerBody',
+            u8(6): s32(-41875289),
+            u8(7): s32(myActorId * 1000 + 1), // this value can crash other clients
           },
         }));
         await _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
-          ParameterCode.ActorNr: SizedInt.int(myActorId),
+          ParameterCode.ActorNr: s32(myActorId),
           ParameterCode.Broadcast: true,
           ParameterCode.Properties: {
-            SizedInt.byte(255): _ourPlayer.name,
+            u8(255): _ourPlayer.name,
           },
         }));
         await _matchSocket.add(OperationRequest(OperationCode.SetProperties, {
-          ParameterCode.ActorNr: SizedInt.int(myActorId),
+          ParameterCode.ActorNr: s32(myActorId),
           ParameterCode.Broadcast: true,
           ParameterCode.Properties: _ourPlayer.toMap(),
         }));

@@ -33,20 +33,20 @@ class PlayerProperties {
     killStreak = (map['killstreak'] as SizedInt)?.value;
     perks = map['perks'];
     teamNumber = (map['teamNumber'] as SizedInt)?.value;
-    name = map[SizedInt.byte(255)];
+    name = map[u8(255)];
     model = (map['model'] as SizedInt)?.value;
   }
 
   Map<Object, Object> toMap() {
     var map = Map<Object, Object>();
-    map['characterCamo'] = SizedInt.byte(characterCamo);
-    map['unlockedweapons'] = ProtocolArray(DataType.Integer, unlockedWeapons.map((w) => SizedInt.int(w)).toList());
-    map['rank'] = SizedInt.byte(rank);
-    map['killstreak'] = SizedInt.byte(killStreak);
+    map['characterCamo'] = u8(characterCamo);
+    map['unlockedweapons'] = ProtocolArray(DataType.Integer, unlockedWeapons.map((w) => s32(w)).toList());
+    map['rank'] = u8(rank);
+    map['killstreak'] = u8(killStreak);
     map['perks'] = perks;
-    map['teamNumber'] = SizedInt.byte(teamNumber);
-    map['model'] = SizedInt.byte(model);
-    map[SizedInt.byte(255)] = name;
+    map['teamNumber'] = u8(teamNumber);
+    map['model'] = u8(model);
+    map[u8(255)] = name;
     return map;
   }
 

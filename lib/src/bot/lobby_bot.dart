@@ -47,7 +47,7 @@ class LobbyBot {
         map.forEach((key, value) {
           assert(key is String);
           assert(value is Map);
-          if ((value as Map).containsKey(SizedInt.byte(251))) {
+          if ((value as Map).containsKey(u8(251))) {
             games.remove(key);
           } else {
             var item = GameListItem.fromMap(key, value);

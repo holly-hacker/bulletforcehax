@@ -182,7 +182,7 @@ void main() {
       expect(t is Map<Object, Object>, isTrue); // cannot use runtimeType?
       if (t is Map<Object, Object>) {
         expect(t.length, 2);
-        expect(t[SizedInt.byte(0xFF)], null);
+        expect(t[u8(0xFF)], null);
         expect(t['abc'], true);
       }
     });

@@ -38,8 +38,8 @@ void main() {
         expect(packet.params.containsKey(ParameterCode.GameProperties), isTrue);
         expect(packet.params.containsKey(ParameterCode.PlayerProperties), isTrue);
 
-        expect(packet.params[ParameterCode.ActorNr], SizedInt.int(3));
-        expect(packet.params[ParameterCode.ActorList].toString(), ProtocolArray(DataType.Integer, [SizedInt.int(2), SizedInt.int(3)]).toString());
+        expect(packet.params[ParameterCode.ActorNr], s32(3));
+        expect(packet.params[ParameterCode.ActorList].toString(), ProtocolArray(DataType.Integer, [s32(2), s32(3)]).toString());
 
         var gameProps = packet.params[ParameterCode.GameProperties] as Map;
         var gameProps1 = GameProperties.fromMap(gameProps);
@@ -70,7 +70,7 @@ void main() {
         );
 
         var playerProps = packet.params[ParameterCode.PlayerProperties] as Map;
-        var firstPlayerProps = playerProps[SizedInt.int(2)];
+        var firstPlayerProps = playerProps[s32(2)];
         var props = PlayerProperties.fromMap(firstPlayerProps);
         expect(props, PlayerProperties()
             ..characterCamo = 0

@@ -21,7 +21,7 @@ abstract class BasicGameInfo {  // GameProperties extends from this?
   BasicGameInfo();
 
   BasicGameInfo.fromMap(Map<Object, Object> map) {
-    field253 = map[SizedInt.byte(253)];
+    field253 = map[u8(253)];
     modeName = map['modeName'];
     averageRank = (map['averagerank'] as SizedInt)?.value;
     switchingMap = map['switchingmap'];
@@ -31,22 +31,22 @@ abstract class BasicGameInfo {  // GameProperties extends from this?
     dedicated = map['dedicated'];
     password = map['password'];
     mapName = map['mapName'];
-    _field255 = (map[SizedInt.byte(255)] as SizedInt)?.value;
+    _field255 = (map[u8(255)] as SizedInt)?.value;
   }
 
   Map<Object, Object> toMap() {
     var map = Map<Object, Object>();
-    map[SizedInt.byte(253)] = field253;
+    map[u8(253)] = field253;
     map['modeName'] = modeName;
-    map['averagerank'] = SizedInt.int(averageRank);
+    map['averagerank'] = s32(averageRank);
     map['switchingmap'] = switchingMap;
     map['roomName'] = roomName;
-    map['allowedweapons'] = ProtocolArray(DataType.Integer, allowedWeapons.map((i) => SizedInt.int(i)).toList());
-    map['eventcode'] = SizedInt.int(eventCode);
+    map['allowedweapons'] = ProtocolArray(DataType.Integer, allowedWeapons.map((i) => s32(i)).toList());
+    map['eventcode'] = s32(eventCode);
     map['dedicated'] = dedicated;
     map['password'] = password;
     map['mapName'] = mapName;
-    map[SizedInt.byte(255)] = SizedInt.byte(_field255);
+    map[u8(255)] = u8(_field255);
     return map;
   }
 
