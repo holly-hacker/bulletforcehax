@@ -17,8 +17,8 @@ abstract class DataType {
   static const int OperationRequest = 113;
   static const int String = 115;
   static const int ByteArray = 120;
-  static const int Array = 121;       // A List, predetermined type, C# type is Array
-  static const int ObjectArray = 122; // A Set, random types, C# type is List<object>
+  static const int Array = 121;       // An array of predetermined type, C# type is Array. Implemented as ProtocolArray.
+  static const int ObjectArray = 122; // An array of random types, C# type is List<object>. Implemented as List<Object>
 }
 
 abstract class PacketType {
@@ -31,6 +31,11 @@ abstract class PacketType {
   static const int InternalOperationResponse = 7;
   static const int Message = 8;
   static const int RawMessage = 9;
+}
+
+abstract class InternalOperationCode {
+  static const int InitEncryption = 0;
+  static const int Ping = 1;
 }
 
 abstract class OperationCode {

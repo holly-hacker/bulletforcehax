@@ -11,6 +11,8 @@ dependencies:
   path: ^1.6.0
   buffer: ^1.0.6
   convert: ^2.1.1
+  collection: ^1.14.12  # used for array equality
+  synchronized: ^2.1.0+1 # used to lock async methods
 
 dev_dependencies:
   build_runner: '>=1.6.2 <2.0.0'
