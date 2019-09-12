@@ -1,13 +1,13 @@
 import 'package:angular/angular.dart';
 
 import '../Services/js_interop_service.dart';
-import 'game_component.dart';
+import 'game_container_component.dart';
 
 @Component(
     selector: 'my-app',
-    template: '<game></game>',
+    template: '<game-container></game-container>',
     directives: [
-      GameComponent
+      GameContainerComponent
     ],
     providers: [ClassProvider(JsInteropService)]
 )

@@ -2,7 +2,8 @@ import 'PlayerState.dart';
 
 class GameState {
   int actorNumber;
-  Map<int, PlayerState> _players = {};
+  Map<int, PlayerState> players = {};
+  PlayerState get me => getMe();
 
   GameState(this.actorNumber);
 
@@ -11,10 +12,10 @@ class GameState {
   }
 
   PlayerState getPlayer(int actorNumber) {
-    if (!_players.containsKey(actorNumber)) {
-      _players[actorNumber] = PlayerState(actorNumber);
+    if (!players.containsKey(actorNumber)) {
+      players[actorNumber] = PlayerState(actorNumber);
     }
 
-    return _players[actorNumber];
+    return players[actorNumber];
   }
 }
