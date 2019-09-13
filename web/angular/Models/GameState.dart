@@ -18,4 +18,8 @@ class GameState {
 
     return players[actorNumber];
   }
+
+  void removePlayer(int actorNr) {
+    players.remove(actorNr);
+  }
 }

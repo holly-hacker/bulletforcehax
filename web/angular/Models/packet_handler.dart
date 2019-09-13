@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:bullet_force_hax/bullet_force_hax.dart';
+import 'package:bullet_force_hax/src/typed_wrappers/player_properties.dart';
 
 import '../Services/js_interop_service.dart';
 import 'GameState.dart';
@@ -118,6 +119,19 @@ class PacketHandler {
           var gameCount = packet.params[ParameterCode.GameCount];
           var peerCount = packet.params[ParameterCode.PeerCount];
           print('Appstats: $gameCount games, $peerCount peers and $masterPeerCount master peers');
+          break;
+        case EventCode.Join:
+          var actorNr = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
+          var player = packet.params[ParameterCode.PlayerProperties] as Map;
+          var playerInfo = PlayerProperties.fromMap(player);  // this map could be empty!
+          print('player joined: $playerInfo');
+          state.getPlayer(actorNr); // just create for now
+          break;
+        case EventCode.Leave:
+          var actorNr = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
+          // var actorList = (packet.params[ParameterCode.ActorList] as ProtocolArray).data.cast<SizedInt>();
+          // actorList is likely the list of remaining players, including you
+          state.removePlayer(actorNr);
           break;
 
         case 200:
