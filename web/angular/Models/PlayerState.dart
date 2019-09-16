@@ -12,9 +12,9 @@ class PlayerState {
   int yaw;
   int bodyYaw;
 
-  double get x => position.f1;
-  double get y => position.f2;
-  double get z => position.f3;
+  double get x => position?.f1;
+  double get y => position?.f2;
+  double get z => position?.f3;
 
   PlayerState(this.actorNumber);
 
