@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:bullet_force_hax/bullet_force_hax.dart';
 import 'package:synchronized/synchronized.dart';
 
-import '../utils/cancellable_interval_stream.dart';
+import 'cancellable_interval_stream.dart';
 import 'connection_details.dart';
 import 'websock_creator.dart';
 

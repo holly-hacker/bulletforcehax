@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:bullet_force_hax/bullet_force_hax_cli.dart';
+import 'package:bullet_force_hax/bullet_force_hax.dart';
+
+import 'bot.dart';
 
 Future main(List<String> arguments) async {
   if (arguments.isNotEmpty && arguments[0] == "decodeb64") {
