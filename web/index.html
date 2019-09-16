@@ -7,26 +7,16 @@
     <!--suppress HtmlUnknownTarget -->
     <script defer src="main.dart.js"></script>
 
-    <script src="https://server2.blayzegames.com/BulletForceWebGL/TemplateData/UnityProgress.js"></script>
     <script src="https://server2.blayzegames.com/BulletForceWebGL/Build/UnityLoader.js"></script>
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <script>
-        function startGame() {
-            window.CrazySDK = {
-                requestAd() {},
-                init() {},
-            };
-
-            const urlOriginal = "https://server2.blayzegames.com/BulletForceWebGL/Build/BulletForceWebGL_New.json";
-            const urlCrazyGames = "https://files.crazygames.com/bullet-force/9/Build/01650350c4b8491fe275c2ded00c5af5.json";
-            window.gameInstance = UnityLoader.instantiate("gameContainer", urlOriginal, {
-                onProgress: UnityProgress
-            });
-
-            return window.gameInstance;
-        }
+        // make sure that the CrazyGames build behaves, if in use
+        window.CrazySDK = {
+            requestAd() {},
+            init() {},
+        };
 
         let hooked = false;
         let cbSend, cbRecv;
