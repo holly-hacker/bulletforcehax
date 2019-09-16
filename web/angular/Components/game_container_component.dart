@@ -15,14 +15,12 @@ import 'game_info_component.dart';
 )
 class GameContainerComponent implements OnInit {
   JsInteropService jsInterop;
-  PacketHandler handler;
+  PacketHandler handler = PacketHandler();
 
   @ViewChild(GameComponent)
   GameComponent game;
 
-  GameContainerComponent(this.jsInterop) {
-    handler = PacketHandler(jsInterop);
-  }
+  GameContainerComponent(this.jsInterop);
 
   void ngOnInit() {
     jsInterop.hookWebSock(handler.handleBufferSend, handler.handleBufferRecv);

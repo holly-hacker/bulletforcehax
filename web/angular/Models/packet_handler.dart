@@ -4,17 +4,13 @@ import 'dart:typed_data';
 import 'package:bullet_force_hax/bullet_force_hax.dart';
 import 'package:bullet_force_hax/src/typed_wrappers/player_properties.dart';
 
-import '../Services/js_interop_service.dart';
 import 'GameState.dart';
 import 'PlayerState.dart';
 
 class PacketHandler {
   GameState state;
 
-  JsInteropService jsInterop;
-  void Function(String s) get writeStatus => jsInterop.writeStatus;
-
-  PacketHandler(this.jsInterop);
+  PacketHandler();
 
   List<ByteBuffer> handleBufferSend(ByteBuffer buffer) {
     var packet = ProtocolReader(buffer.asUint8List()).readPacket();
@@ -189,8 +185,6 @@ class PacketHandler {
           var playerProps = players[playerId] as Map<Object, Object>;
           player.name = playerProps[u8(255)];
         }
-
-        writeStatus('Our actor nr is ${state.actorNumber}');
       }
     }
     else {
