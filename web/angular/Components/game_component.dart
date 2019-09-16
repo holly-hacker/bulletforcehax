@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 
@@ -23,8 +25,23 @@ class GameComponent {
   GameComponent(this.unityLoader, this.jsInterop);
 
   void startGame([bool useCrazyGamesBuild = false]) {
+    Element loadingElement;
     instance = unityLoader.instantiate("gameContainer", _getUrl(useCrazyGamesBuild), (instance, progress) {
-      print('progress update: $progress');
+      print('UnityLoader progress update: $progress');
+      if (progress != 1) {
+        if (loadingElement == null) {
+          instance.container.hidden = true;
+          loadingElement = Element.div();
+          instance.container.after(loadingElement);
+          print(instance.container.outerHtml);
+        }
+        loadingElement.text = "Loading: ${progress*100}%";
+      }
+      else {
+        // progress == 1
+        instance.container.hidden = false;
+        loadingElement.hidden = true;
+      }
     });
 
     // allow for easier debugging in browser devtools
