@@ -1,6 +1,8 @@
 import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 
+import '../Models/game_instance.dart';
+import '../Services/js_interop_service.dart';
 import '../Services/unity_loader_service.dart';
 
 @Component(
@@ -15,14 +17,26 @@ import '../Services/unity_loader_service.dart';
 )
 class GameComponent {
   UnityLoaderService unityLoader;
+  JsInteropService jsInterop;
+  GameInstance instance;
 
-  GameComponent(this.unityLoader);
+  GameComponent(this.unityLoader, this.jsInterop);
 
-  void startGame() {
-    const urlOriginal = "https://server2.blayzegames.com/BulletForceWebGL/Build/BulletForceWebGL_New.json";
-    const urlCrazyGames = "https://files.crazygames.com/bullet-force/9/Build/01650350c4b8491fe275c2ded00c5af5.json";
-    var gameInstance = unityLoader.instantiate("gameContainer", urlOriginal, (x, progress) {
+  void startGame([bool useCrazyGamesBuild = false]) {
+    instance = unityLoader.instantiate("gameContainer", _getUrl(useCrazyGamesBuild), (instance, progress) {
       print('progress update: $progress');
     });
+
+    // allow for easier debugging in browser devtools
+    jsInterop.gameInstance = instance;
+  }
+
+  String _getUrl(bool useCrazyGamesBuild) {
+    if (useCrazyGamesBuild) {
+      return "https://files.crazygames.com/bullet-force/9/Build/01650350c4b8491fe275c2ded00c5af5.json";
+    }
+    else {
+      return "https://server2.blayzegames.com/BulletForceWebGL/Build/BulletForceWebGL_New.json";
+    }
   }
 }

@@ -3,11 +3,13 @@ library unity_loader;
 
 import 'package:js/js.dart';
 
+import '../Models/game_instance.dart';
+
 // returns gameInstance
 @JS("instantiate")
-external Object _instantiate(String container, String url, InstantiateOptions options);
+external GameInstance _instantiate(String container, String url, InstantiateOptions options);
 
-typedef _onProgressDefinition = void Function(Object, double);
+typedef _onProgressDefinition = void Function(GameInstance, double);
 
 @JS()
 @anonymous
@@ -18,6 +20,6 @@ class InstantiateOptions {
 }
 
 class UnityLoaderService {
-  Object instantiate(String container, String url, _onProgressDefinition onProgress)
+  GameInstance instantiate(String container, String url, _onProgressDefinition onProgress)
     => _instantiate(container, url, InstantiateOptions(onProgress: allowInterop(onProgress)));
 }
