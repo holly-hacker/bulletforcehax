@@ -121,6 +121,10 @@ class PacketHandler {
           var player = packet.params[ParameterCode.PlayerProperties] as Map;
           var playerInfo = PlayerProperties.fromMap(player);  // this map could be empty!
           print('player joined: $playerInfo');
+          if (state == null) {
+            state = GameState(actorNr);
+            print('created state from Join event');
+          }
           state.getPlayer(actorNr); // just create for now
           break;
         case EventCode.Leave:
@@ -178,6 +182,7 @@ class PacketHandler {
         // new game started
         var myActorNumber = (packet.params[ParameterCode.ActorNr] as SizedInt).value;
         state = GameState(myActorNumber);
+        print('created state from JoinGame packet');
 
         var players = packet.params[ParameterCode.PlayerProperties] as Map<Object, Object>;
         for (var playerId in players.keys.cast<SizedInt>()) {
