@@ -12,7 +12,7 @@ class GameInstance {
   @JS() String url;
 
   @JS() external void popup(String str, [List<PopupCallback> callbacks]);
-  @JS() external void SetFullscreen();
+  @JS() external void SetFullscreen(bool toFullscreen);
 }
 
 @JS()

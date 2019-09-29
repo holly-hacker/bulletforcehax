@@ -1,7 +1,7 @@
 <div class="webgl-content">
     <div id="gameContainer" hidden></div>
 
-    <material-button raised onclick="gameInstance.SetFullscreen(1)">
+    <material-button raised (click)="instance.SetFullscreen(true)">
         <material-icon icon="fullscreen"></material-icon>
         Fullscreen
     </material-button>
