@@ -175,12 +175,11 @@
             });
             return window.gameInstance;
         }
-        startGame(); // TODO: should be ran from wasm
     </script>
 
     <!-- Hax stuff -->
     <script type="module">
-        import init, {greet} from "./hax.js";
+        import init from "./hax.js";
         init().then(wasm => {
             console.log("Wasm initialized");
             // greet("test");
