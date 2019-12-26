@@ -5,6 +5,8 @@ import sys
 
 import requests
 
+# TODO: debug why this script downloads compressed files while browser downloads uncompressed :(
+
 # find json link of latest version
 game_url = "https://www.crazygames.com/game/bullet-force-multiplayer"
 iframe_pattern = re.escape("https://www.crazygames.com/gameframe/bullet-force-multiplayer/CHANGE_ME/index.html").replace("CHANGE_ME", "\\d+")

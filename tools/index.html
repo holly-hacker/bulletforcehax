@@ -2,18 +2,205 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
-</head>
-<body>
-    Hello, world!
+    <title>Bullet Force hax</title>
+
+    <!-- parts adapted from greggman/better-unity-webgl-template, licensed under CC0 -->
+    <!-- could possibly be trimmed  -->
+    <style>
+        html {
+        box-sizing: border-box;
+      }
+      *, *:before, *:after {
+        box-sizing: inherit;
+      }
+      body {
+        margin: 0;
+        background: #444;
+      }
+      #gameContainer {
+        width: 100vw;
+        height: 100vh;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      /* try to handle mobile dialog */
+      canvas + * {
+        z-index: 2;
+      }
+      .logo {
+          display: block;
+          max-width: 100vw;
+          max-height: 70vh;
+      }
+      .progress {
+          margin: 1.5em;
+          border: 1px solid white;
+          width: 50vw;
+          display: none;
+      }
+      .progress .full {
+          margin: 2px;
+          background: white;
+          height: 1em;
+          transform-origin: top left;
+      }
+      #loader {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .spinner,
+      .spinner:after {
+        border-radius: 50%;
+        width: 5em;
+        height: 5em;
+      }
+      .spinner {
+        margin: 10px;
+        font-size: 10px;
+        position: relative;
+        text-indent: -9999em;
+        border-top: 1.1em solid rgba(255, 255, 255, 0.2);
+        border-right: 1.1em solid rgba(255, 255, 255, 0.2);
+        border-bottom: 1.1em solid rgba(255, 255, 255, 0.2);
+        border-left: 1.1em solid #ffffff;
+        transform: translateZ(0);
+        animation: spinner-spin 1.1s infinite linear;
+      }
+      @keyframes spinner-spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+
+    <!--
+    <script src="/UnityLoader.js"></script>
+    <script src="/CrazyLoader.js"></script>
+    <script src="https://greggman.github.io/better-unity-webgl-template/Build/UnityLoader.js"></script>
+    -->
+    <script src="https://files.crazygames.com/unityloaders/UnityLoader-v1.js"></script>
+    <!--
+    <script src="https://gameframe.crazygames.com/crazygames-gameframe-v1.bundle.js"></script>
+    <script src="https://sdk.crazygames.com/sdk.js?v20052019"></script>
+    -->
+
+    <!-- Hooking functions -->
+    <script>
+        let hooked = false;
+        let cbSend, cbRecv;
+        function hookWebSock(send, recv) {
+            if (hooked) throw Error('Already hooked!');
+            hooked = true;
+            cbSend = send;
+            cbRecv = recv;
+            let proto = WebSocket.prototype;
+            proto.origSend = proto.send;
+            proto.send = newSend;
+        }
+        function newSend(data) {
+            const _this = this;
+            if (!this.isRecvHooked && this.onmessage) {
+                this.origRecv = this.onmessage;
+                this.onmessage = function (msg) {
+                    if (msg.data instanceof ArrayBuffer) {
+                        let data = cbRecv(msg.data);
+                        _this.origRecv(new MessageEvent('message', {
+                            data: data,
+                            lastEventId: msg.lastEventId,
+                            origin: msg.origin,
+                            ports: msg.ports,
+                            source: msg.source,
+                        }));
+                    } else {
+                        // do nothing, just return the original
+                        _this.origRecv(msg);
+                    }
+                };
+                this.isRecvHooked = true;
+            }
+            if (data instanceof ArrayBuffer)
+            {
+                let newPacketData = cbSend(data);
+                for (let packetData of newPacketData) {
+                    this.origSend(packetData);
+                }
+            } else {
+                this.origSend(data);
+            }
+        }
+        var statusElement;
+        function writeStatus(s) {
+            if (!statusElement)
+                statusElement = document.getElementById('status');
+            statusElement.innerText = s;
+        }
+    </script>
+
+    <!-- Game init -->
+    <script>
+        function startGame() {
+            // in case CrazySDK UnityLoader is used
+            window.Crazygames = window.CrazySDK = {
+                requestAd() {console.trace("requestAd", arguments)},
+                init() {console.trace("init", arguments)},
+            };
+
+            function UnityProgress(gameInstance, progress) {
+                if (!gameInstance.Module) return;
+                const loader = document.querySelector("#loader");
+                if (!gameInstance.progress) {
+                    const progress = document.querySelector("#loader .progress");
+                    progress.style.display = "block";
+                    gameInstance.progress = progress.querySelector(".full");
+                    loader.querySelector(".spinner").style.display = "none";
+                }
+                gameInstance.progress.style.transform = `scaleX(${progress})`;
+                if (progress === 1 && !gameInstance.removeTimeout) {
+                    gameInstance.removeTimeout = setTimeout(function() {
+                        loader.style.display = "none";
+                    }, 2000);
+                }
+            }
+
+            const url = "/Build/manifest.json";
+            window.gameInstance = UnityLoader.instantiate("gameContainer", url, {
+                onProgress: UnityProgress
+            });
+            return window.gameInstance;
+        }
+        startGame(); // TODO: should be ran from wasm
+    </script>
+
+    <!-- Hax stuff -->
     <script type="module">
         import init, {greet} from "./hax.js";
         init().then(wasm => {
-            console.log(wasm);
-            greet("test");
+            console.log("Wasm initialized");
+            // greet("test");
         });
     </script>
+</head>
+<body>
+
+    <div id="gameContainer"></div>
+    <div id="loader">
+        <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Bigsmile_smiley_yellow_simple.svg/1024px-Bigsmile_smiley_yellow_simple.svg.png">
+        <div class="spinner"></div>
+        <div class="progress"><div class="full"></div></div>
+    </div>
+
 </body>
 </html>
