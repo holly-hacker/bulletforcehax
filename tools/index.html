@@ -86,16 +86,7 @@
       }
     </style>
 
-    <!--
-    <script src="/UnityLoader.js"></script>
-    <script src="/CrazyLoader.js"></script>
-    <script src="https://greggman.github.io/better-unity-webgl-template/Build/UnityLoader.js"></script>
-    -->
     <script src="https://files.crazygames.com/unityloaders/UnityLoader-v1.js"></script>
-    <!--
-    <script src="https://gameframe.crazygames.com/crazygames-gameframe-v1.bundle.js"></script>
-    <script src="https://sdk.crazygames.com/sdk.js?v20052019"></script>
-    -->
 
     <!-- Hooking functions -->
     <script>
@@ -155,7 +146,10 @@
             // in case CrazySDK UnityLoader is used
             window.Crazygames = window.CrazySDK = {
                 requestAd() {console.trace("requestAd", arguments)},
-                init() {console.trace("init", arguments)},
+                init() {
+                    console.log("CrazySDK init, sending response to adblock check", arguments);
+                    window.gameInstance.SendMessage("CrazySDK", "AdblockNotDetected")
+                },
             };
 
             function UnityProgress(gameInstance, progress) {
