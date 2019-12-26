@@ -132,12 +132,6 @@
                 this.origSend(data);
             }
         }
-        var statusElement;
-        function writeStatus(s) {
-            if (!statusElement)
-                statusElement = document.getElementById('status');
-            statusElement.innerText = s;
-        }
     </script>
 
     <!-- Game init -->
@@ -179,10 +173,14 @@
 
     <!-- Hax stuff -->
     <script type="module">
-        import init from "./hax.js";
+        import init, { sock_recv, sock_send } from "./hax.js";
         init().then(wasm => {
             console.log("Wasm initialized");
-            // greet("test");
+            hookWebSock(
+                (x) => [sock_send(new Uint8Array(x)).buffer],
+                (x) => sock_recv(new Uint8Array(x)).buffer,
+            );
+            console.log("Hooks created")
         });
     </script>
 </head>

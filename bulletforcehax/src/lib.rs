@@ -1,6 +1,6 @@
 extern crate wasm_bindgen;
 
-use log::{Level, info};
+use log::{Level, debug, info};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -21,4 +21,17 @@ pub fn main() -> Result<(), JsValue> {
     info!("BulletForceHax initialized, starting game.");
     startGame();
     Ok(())
+}
+
+// TODO: support returning multiple sent packets
+#[wasm_bindgen]
+pub fn sock_send(data: Vec<u8>) -> Vec<u8> {
+    debug!("SEND: length of {}", data.len());
+    data
+}
+
+#[wasm_bindgen]
+pub fn sock_recv(data: Vec<u8>) -> Vec<u8> {
+    debug!("RECV: length of {}", data.len());
+    data
 }
