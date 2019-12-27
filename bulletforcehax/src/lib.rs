@@ -3,6 +3,8 @@ extern crate wasm_bindgen;
 use log::{Level, debug, info};
 use wasm_bindgen::prelude::*;
 
+mod packets;
+
 #[wasm_bindgen]
 extern {
     pub fn alert(s: &str);
@@ -25,13 +27,17 @@ pub fn main() -> Result<(), JsValue> {
 
 // TODO: support returning multiple sent packets
 #[wasm_bindgen]
-pub fn sock_send(data: Vec<u8>) -> Vec<u8> {
-    debug!("SEND: length of {}", data.len());
-    data
+pub fn sock_send(data: &[u8]) -> Vec<u8> {
+    match packets::Packet::read(data) {
+        Ok(packet) => { debug!("SEND: length of {}, {:?}", data.len(), packet); Vec::from(data) }, // TODO: return new packet
+        Err(error) => { debug!("SEND ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+    }
 }
 
 #[wasm_bindgen]
-pub fn sock_recv(data: Vec<u8>) -> Vec<u8> {
-    debug!("RECV: length of {}", data.len());
-    data
+pub fn sock_recv(data: &[u8]) -> Vec<u8> {
+    match packets::Packet::read(data) {
+        Ok(packet) => { debug!("RECV: length of {}, {:?}", data.len(), packet); Vec::from(data) }, // TODO: return new packet
+        Err(error) => { debug!("RECV ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+    }
 }
