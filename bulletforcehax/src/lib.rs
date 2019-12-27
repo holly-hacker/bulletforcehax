@@ -1,6 +1,6 @@
 extern crate wasm_bindgen;
 
-use log::{Level, debug, info};
+use log::{Level, debug, info, error};
 use wasm_bindgen::prelude::*;
 
 mod packets;
@@ -28,16 +28,16 @@ pub fn main() -> Result<(), JsValue> {
 // TODO: support returning multiple sent packets
 #[wasm_bindgen]
 pub fn sock_send(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(data) {
-        Ok(packet) => { debug!("SEND: length of {}, {:?}", data.len(), packet); Vec::from(data) }, // TODO: return new packet
-        Err(error) => { debug!("SEND ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+    match packets::Packet::read(data, packets::Direction::Send) {
+        Ok(packet) => { debug!("SEND: {:?}", packet); Vec::from(data) }, // TODO: return new packet
+        Err(error) => { error!("SEND ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
     }
 }
 
 #[wasm_bindgen]
 pub fn sock_recv(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(data) {
-        Ok(packet) => { debug!("RECV: length of {}, {:?}", data.len(), packet); Vec::from(data) }, // TODO: return new packet
-        Err(error) => { debug!("RECV ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+    match packets::Packet::read(data, packets::Direction::Recv) {
+        Ok(packet) => { debug!("RECV: {:?}", packet); Vec::from(data) }, // TODO: return new packet
+        Err(error) => { error!("RECV ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
     }
 }
