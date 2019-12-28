@@ -1,5 +1,5 @@
-use std::io::{Cursor};
 use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::Cursor;
 
 #[derive(Debug)]
 pub enum Packet<'a> {
@@ -83,7 +83,7 @@ pub enum ProtocolValue<'a> {
     StringArray,
     IntegerArray,
     Dictionary, // Map<Object, Object>, predefined types, C# type is IDictionary/Dictionary<T1, T2>, TODO
-    Hashtable, // Map<Object, Object>, random types, C# type is Hashtable/Dictionary<object, object>
+    Hashtable,  // Map<Object, Object>, random types, C# type is Hashtable/Dictionary<object, object>
     Custom,
 }
 
@@ -123,7 +123,7 @@ fn read_string<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Option<&'a str>, PacketRe
     match read_value(c)? {
         ProtocolValue::Null() => Ok(None),
         ProtocolValue::String(string) => Ok(Some(string)),
-        _ => Err(PacketReadError::UnexpectedProtocolValue)
+        _ => Err(PacketReadError::UnexpectedProtocolValue),
     }
 }
 
@@ -154,7 +154,7 @@ fn read_value<'a>(c: &mut Cursor<&'a [u8]>) -> Result<ProtocolValue<'a>, PacketR
             c.set_position((pos + len) as u64);
             let str_slice = std::str::from_utf8(return_slice)?;
             Ok(ProtocolValue::String(str_slice))
-        },
+        }
         120 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::ByteArray)),
         121 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::Array)),
         122 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::ObjectArray)),
@@ -167,7 +167,9 @@ impl Packet<'_> {
         let mut c = Cursor::new(data);
 
         let magic = c.read_u8()?;
-        if magic != 0xF3 { return Err(PacketReadError::InvalidMagic(magic)); }
+        if magic != 0xF3 {
+            return Err(PacketReadError::InvalidMagic(magic));
+        }
 
         let packet_type: u8 = c.read_u8()?;
 
@@ -177,14 +179,22 @@ impl Packet<'_> {
             2 => Ok(Packet::OperationRequest(Operation::read(&mut c)?)),
             3 => {
                 let operation_type = c.read_u8()?;
-                Ok(Packet::OperationResponse(c.read_i16::<LittleEndian>()?, read_string(&mut c)?, Operation::read_with_type(&mut c, operation_type)?))
-            },
+                Ok(Packet::OperationResponse(
+                    c.read_i16::<LittleEndian>()?,
+                    read_string(&mut c)?,
+                    Operation::read_with_type(&mut c, operation_type)?,
+                ))
+            }
             4 => Ok(Packet::Event(Event::read(&mut c, direction)?)),
             6 => Ok(Packet::InternalOperationRequest(InternalOperation::read(&mut c)?)),
             7 => {
                 let operation_type = c.read_u8()?;
-                Ok(Packet::InternalOperationResponse(c.read_i16::<LittleEndian>()?, read_string(&mut c)?, InternalOperation::read_with_type(&mut c, operation_type)?))
-            },
+                Ok(Packet::InternalOperationResponse(
+                    c.read_i16::<LittleEndian>()?,
+                    read_string(&mut c)?,
+                    InternalOperation::read_with_type(&mut c, operation_type)?,
+                ))
+            }
             8 => Ok(Packet::Message),
             9 => Ok(Packet::RawMessage),
             _ => Err(PacketReadError::UnknownPacketType(packet_type)),

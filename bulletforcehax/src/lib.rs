@@ -1,12 +1,12 @@
 extern crate wasm_bindgen;
 
-use log::{Level, debug, info, error};
+use log::{debug, error, info, Level};
 use wasm_bindgen::prelude::*;
 
 mod packets;
 
 #[wasm_bindgen]
-extern {
+extern "C" {
     pub fn alert(s: &str);
     pub fn startGame();
 }
@@ -29,15 +29,27 @@ pub fn main() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn sock_send(data: &[u8]) -> Vec<u8> {
     match packets::Packet::read(data, packets::Direction::Send) {
-        Ok(packet) => { debug!("SEND: {:?}", packet); Vec::from(data) }, // TODO: return new packet
-        Err(error) => { error!("SEND ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+        Ok(packet) => {
+            debug!("SEND: {:?}", packet);
+            Vec::from(data)
+        } // TODO: return new packet
+        Err(error) => {
+            error!("SEND ERR: {:?}, data: {:?}", error, data);
+            Vec::from(data)
+        }
     }
 }
 
 #[wasm_bindgen]
 pub fn sock_recv(data: &[u8]) -> Vec<u8> {
     match packets::Packet::read(data, packets::Direction::Recv) {
-        Ok(packet) => { debug!("RECV: {:?}", packet); Vec::from(data) }, // TODO: return new packet
-        Err(error) => { error!("RECV ERR: {:?}, data: {:?}", error, data); Vec::from(data) }
+        Ok(packet) => {
+            debug!("RECV: {:?}", packet);
+            Vec::from(data)
+        } // TODO: return new packet
+        Err(error) => {
+            error!("RECV ERR: {:?}, data: {:?}", error, data);
+            Vec::from(data)
+        }
     }
 }
