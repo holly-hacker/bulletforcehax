@@ -1,4 +1,4 @@
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use std::io::Cursor;
 
 use super::*;
@@ -20,19 +20,19 @@ fn read_value<'a>(c: &mut Cursor<&'a [u8]>) -> Result<ProtocolValue<'a>, PacketR
         97 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::StringArray)),
         98 => Ok(ProtocolValue::Byte(c.read_u8()?)),
         99 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
-        100 => Ok(ProtocolValue::Double(c.read_f64::<LittleEndian>()?)),
+        100 => Ok(ProtocolValue::Double(c.read_f64::<BigEndian>()?)),
         101 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
-        102 => Ok(ProtocolValue::Float(c.read_f32::<LittleEndian>()?)),
+        102 => Ok(ProtocolValue::Float(c.read_f32::<BigEndian>()?)),
         104 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::Hashtable)),
-        105 => Ok(ProtocolValue::Integer(c.read_u32::<LittleEndian>()?)),
-        107 => Ok(ProtocolValue::Short(c.read_u16::<LittleEndian>()?)),
-        108 => Ok(ProtocolValue::Long(c.read_u64::<LittleEndian>()?)),
+        105 => Ok(ProtocolValue::Integer(c.read_u32::<BigEndian>()?)),
+        107 => Ok(ProtocolValue::Short(c.read_u16::<BigEndian>()?)),
+        108 => Ok(ProtocolValue::Long(c.read_u64::<BigEndian>()?)),
         110 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::IntegerArray)),
         111 => Ok(ProtocolValue::Bool(c.read_u8()? != 0)),
         112 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::OperationResponse)),
         113 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::OperationRequest)),
         115 => {
-            let len = c.read_u16::<LittleEndian>()? as usize;
+            let len = c.read_u16::<BigEndian>()? as usize;
             let pos = c.position() as usize;
 
             let return_slice = &(*c.get_ref())[pos..pos + len];
@@ -65,7 +65,7 @@ impl Packet<'_> {
             3 => {
                 let operation_type = c.read_u8()?;
                 Ok(Packet::OperationResponse(
-                    c.read_i16::<LittleEndian>()?,
+                    c.read_i16::<BigEndian>()?,
                     read_string(&mut c)?,
                     Operation::read_with_type(&mut c, operation_type)?,
                 ))
@@ -75,7 +75,7 @@ impl Packet<'_> {
             7 => {
                 let operation_type = c.read_u8()?;
                 Ok(Packet::InternalOperationResponse(
-                    c.read_i16::<LittleEndian>()?,
+                    c.read_i16::<BigEndian>()?,
                     read_string(&mut c)?,
                     InternalOperation::read_with_type(&mut c, operation_type)?,
                 ))
