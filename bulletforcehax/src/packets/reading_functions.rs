@@ -88,17 +88,8 @@ fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<u8, Prot
     for _i in 0..len {
         ret.insert(c.read_u8()?, read_value(c)?);
     }
+    debug!("Read param table: {:?}", ret);
     Ok(ret)
-}
-
-fn try_read_parameter_table(c: &mut Cursor<&[u8]>) {
-    match read_parameter_table(c) {
-        Ok(c) => debug!("Read hashtable: {:?}", c),
-        Err(e) => match e {
-            PacketReadError::UnimplementedProtocolValueType(t) => error!("Unimplemented {:?}", t),
-            _ => error!("Couldn't read param table. {:?}, data: {:?}", e, *c),
-        },
-    }
 }
 
 impl Packet<'_> {
@@ -115,23 +106,23 @@ impl Packet<'_> {
         match packet_type {
             0 => Ok(Packet::Init),
             1 => Ok(Packet::InitResponse),
-            2 => Ok(Packet::OperationRequest(Operation::read(&mut c)?)),
+            2 => Ok(Packet::OperationRequest(Operation::read(&mut c, direction)?)),
             3 => {
                 let operation_type = c.read_u8()?;
                 Ok(Packet::OperationResponse(
                     c.read_i16::<BigEndian>()?,
                     read_string(&mut c)?,
-                    Operation::read_with_type(&mut c, operation_type)?,
+                    Operation::read_with_type(&mut c, direction, operation_type)?,
                 ))
             }
             4 => Ok(Packet::Event(Event::read(&mut c, direction)?)),
-            6 => Ok(Packet::InternalOperationRequest(InternalOperation::read(&mut c)?)),
+            6 => Ok(Packet::InternalOperationRequest(InternalOperation::read(&mut c, direction)?)),
             7 => {
                 let operation_type = c.read_u8()?;
                 Ok(Packet::InternalOperationResponse(
                     c.read_i16::<BigEndian>()?,
                     read_string(&mut c)?,
-                    InternalOperation::read_with_type(&mut c, operation_type)?,
+                    InternalOperation::read_with_type(&mut c, direction, operation_type)?,
                 ))
             }
             8 => Ok(Packet::Message),
@@ -141,11 +132,11 @@ impl Packet<'_> {
     }
 }
 
+// TODO: how to check if I missed a field when deserializing?
 impl Event {
     pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> Result<Event, PacketReadError> {
         let event_type = c.read_u8()?;
-
-        try_read_parameter_table(c);
+        let _params = read_parameter_table(c)?;
 
         match event_type {
             210 => Ok(Event::AzureNodeInfo),
@@ -169,15 +160,15 @@ impl Event {
     }
 }
 
-impl Operation {
-    pub fn read(c: &mut Cursor<&[u8]>) -> Result<Operation, PacketReadError> {
+impl Operation<'_> {
+    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> Result<Operation<'a>, PacketReadError> {
         let operation_type = c.read_u8()?;
 
-        try_read_parameter_table(c);
-
-        Operation::read_with_type(c, operation_type)
+        Operation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type(_c: &mut Cursor<&[u8]>, operation_type: u8) -> Result<Operation, PacketReadError> {
+    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> Result<Operation<'a>, PacketReadError> {
+        let params = read_parameter_table(c)?;
+
         match operation_type {
             217 => Ok(Operation::GetGameList),
             218 => Ok(Operation::ServerSettings),
@@ -191,7 +182,26 @@ impl Operation {
             227 => Ok(Operation::CreateGame),
             228 => Ok(Operation::LeaveLobby),
             229 => Ok(Operation::JoinLobby),
-            230 => Ok(Operation::Authenticate),
+            230 => match direction {
+                Direction::Send if params.contains_key(&(ParameterCode::Secret as u8)) => Ok(Operation::AuthenticateRequest2 {
+                    secret: protocol_get_str(&params, ParameterCode::Secret)?,
+                }),
+                Direction::Send => Ok(Operation::AuthenticateRequest {
+                    app_version: protocol_get_str(&params, ParameterCode::AppVersion)?,
+                    application_id: protocol_get_str(&params, ParameterCode::ApplicationId)?,
+                    region: protocol_get_str(&params, ParameterCode::Region)?,
+                }),
+                Direction::Recv if params.contains_key(&(ParameterCode::Position as u8)) => Ok(Operation::AuthenticateResponse2 {
+                    secret: protocol_get_str(&params, ParameterCode::Secret)?,
+                    position: protocol_get_int(&params, ParameterCode::Position)?,
+                }),
+                Direction::Recv => Ok(Operation::AuthenticateResponse {
+                    unknown: protocol_get_str(&params, 196)?,
+                    secret: protocol_get_str(&params, ParameterCode::Secret)?,
+                    address: protocol_get_str(&params, ParameterCode::Address)?,
+                    user_id: protocol_get_str(&params, ParameterCode::UserId)?,
+                }),
+            },
             231 => Ok(Operation::AuthenticateOnce),
             248 => Ok(Operation::ChangeGroups),
             250 => Ok(Operation::ExchangeKeysForEncryption),
@@ -206,18 +216,53 @@ impl Operation {
 }
 
 impl InternalOperation {
-    pub fn read(c: &mut Cursor<&[u8]>) -> Result<InternalOperation, PacketReadError> {
+    pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> Result<InternalOperation, PacketReadError> {
         let operation_type = c.read_u8()?;
 
-        try_read_parameter_table(c);
-
-        InternalOperation::read_with_type(c, operation_type)
+        InternalOperation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type(_c: &mut Cursor<&[u8]>, operation_type: u8) -> Result<InternalOperation, PacketReadError> {
+    pub fn read_with_type(c: &mut Cursor<&[u8]>, direction: Direction, operation_type: u8) -> Result<InternalOperation, PacketReadError> {
+        let params = read_parameter_table(c)?;
+
         match operation_type {
             0 => Ok(InternalOperation::InitEncryption),
-            1 => Ok(InternalOperation::Ping),
+            1 => match direction {
+                Direction::Send => Ok(InternalOperation::PingRequest {
+                    local_time: protocol_get_int(&params, 1)?,
+                }),
+                Direction::Recv => Ok(InternalOperation::PingResponse {
+                    local_time: protocol_get_int(&params, 1)?,
+                    server_time: protocol_get_int(&params, 2)?,
+                }),
+            },
             _ => Err(PacketReadError::UnknownInternalOperationType(operation_type)),
         }
     }
+}
+
+fn protocol_get_int<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<u32, PacketReadError> {
+    check_contains_key(map, param_code)?;
+
+    match map[&param_code] {
+        ProtocolValue::Integer(i) => Ok(i),
+        _ => Err(PacketReadError::UnexpectedProtocolValue),
+    }
+}
+
+fn protocol_get_str<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<&'a str, PacketReadError> {
+    check_contains_key(map, param_code)?;
+
+    match map[&param_code] {
+        ProtocolValue::String(s) => Ok(s),
+        _ => Err(PacketReadError::UnexpectedProtocolValue),
+    }
+}
+
+fn check_contains_key<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<(), PacketReadError> {
+    if !map.contains_key(&param_code) {
+        error!("Couldn't find key {} in {:?}", param_code, map);
+        return Err(PacketReadError::CouldNotFindKey(param_code));
+    }
+
+    Ok(())
 }

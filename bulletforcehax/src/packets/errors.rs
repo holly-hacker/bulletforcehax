@@ -12,6 +12,7 @@ pub enum PacketReadError {
     UnexpectedProtocolValue,
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
+    CouldNotFindKey(u8),
 }
 
 impl From<std::io::Error> for PacketReadError {
