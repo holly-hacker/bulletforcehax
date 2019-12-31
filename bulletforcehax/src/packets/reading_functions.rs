@@ -88,7 +88,6 @@ fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<u8, Prot
     for _i in 0..len {
         ret.insert(c.read_u8()?, read_value(c)?);
     }
-    debug!("Read param table: {:?}", ret);
     Ok(ret)
 }
 
@@ -135,26 +134,31 @@ impl Packet<'_> {
 // TODO: how to check if I missed a field when deserializing?
 impl Event {
     pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> Result<Event, PacketReadError> {
+        fn err(event: Event, params: HashMap<u8, ProtocolValue>) -> Result<Event, PacketReadError> {
+            debug!("Unimplemented Event: {:?}, {:#?}", event, params);
+            Err(PacketReadError::UnimplementedEventType(event))
+        }
+
         let event_type = c.read_u8()?;
-        let _params = read_parameter_table(c)?;
+        let params = read_parameter_table(c)?;
 
         match event_type {
-            210 => Ok(Event::AzureNodeInfo),
-            223 => Ok(Event::AuthEvent),
-            224 => Ok(Event::LobbyStats),
-            226 => Ok(Event::AppStats),
-            227 => Ok(Event::Match),
-            228 => Ok(Event::QueueState),
-            229 => Ok(Event::GameListUpdate),
-            230 => Ok(Event::GameList),
-            250 => Ok(Event::CacheSliceChanged),
-            251 => Ok(Event::ErrorInfo),
+            210 => err(Event::AzureNodeInfo, params),
+            223 => err(Event::AuthEvent, params),
+            224 => err(Event::LobbyStats, params),
+            226 => err(Event::AppStats, params),
+            227 => err(Event::Match, params),
+            228 => err(Event::QueueState, params),
+            229 => err(Event::GameListUpdate, params),
+            230 => err(Event::GameList, params),
+            250 => err(Event::CacheSliceChanged, params),
+            251 => err(Event::ErrorInfo, params),
             253 => match direction {
-                Direction::Send => Ok(Event::SetProperties),
-                Direction::Recv => Ok(Event::PropertiesChanged),
+                Direction::Send => err(Event::SetProperties, params),
+                Direction::Recv => err(Event::PropertiesChanged, params),
             },
-            254 => Ok(Event::Leave),
-            255 => Ok(Event::Join),
+            254 => err(Event::Leave, params),
+            255 => err(Event::Join, params),
             _ => Err(PacketReadError::UnknownEventType(event_type)),
         }
     }
@@ -167,21 +171,26 @@ impl Operation<'_> {
         Operation::read_with_type(c, direction, operation_type)
     }
     pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> Result<Operation<'a>, PacketReadError> {
+        fn err<'a>(operation: Operation<'static>, params: HashMap<u8, ProtocolValue>) -> Result<Operation<'a>, PacketReadError> {
+            debug!("Unimplemented Operation: {:?}, {:#?}", operation, params);
+            Err(PacketReadError::UnimplementedOperationType(operation))
+        }
+
         let params = read_parameter_table(c)?;
 
         match operation_type {
-            217 => Ok(Operation::GetGameList),
-            218 => Ok(Operation::ServerSettings),
-            219 => Ok(Operation::WebRpc),
-            220 => Ok(Operation::GetRegions),
-            221 => Ok(Operation::GetLobbyStats),
-            222 => Ok(Operation::FindFriends),
-            224 => Ok(Operation::CancelJoinRandom),
-            225 => Ok(Operation::JoinRandomGame),
-            226 => Ok(Operation::JoinGame),
-            227 => Ok(Operation::CreateGame),
-            228 => Ok(Operation::LeaveLobby),
-            229 => Ok(Operation::JoinLobby),
+            217 => err(Operation::GetGameList, params),
+            218 => err(Operation::ServerSettings, params),
+            219 => err(Operation::WebRpc, params),
+            220 => err(Operation::GetRegions, params),
+            221 => err(Operation::GetLobbyStats, params),
+            222 => err(Operation::FindFriends, params),
+            224 => err(Operation::CancelJoinRandom, params),
+            225 => err(Operation::JoinRandomGame, params),
+            226 => err(Operation::JoinGame, params),
+            227 => err(Operation::CreateGame, params),
+            228 => err(Operation::LeaveLobby, params),
+            229 => err(Operation::JoinLobby, params),
             230 => match direction {
                 Direction::Send if params.contains_key(&(ParameterCode::Secret as u8)) => Ok(Operation::AuthenticateRequest2 {
                     secret: protocol_get_str(&params, ParameterCode::Secret)?,
@@ -202,14 +211,14 @@ impl Operation<'_> {
                     user_id: protocol_get_str(&params, ParameterCode::UserId)?,
                 }),
             },
-            231 => Ok(Operation::AuthenticateOnce),
-            248 => Ok(Operation::ChangeGroups),
-            250 => Ok(Operation::ExchangeKeysForEncryption),
-            251 => Ok(Operation::GetProperties),
-            252 => Ok(Operation::SetProperties),
-            253 => Ok(Operation::RaiseEvent),
-            254 => Ok(Operation::Leave),
-            255 => Ok(Operation::Join),
+            231 => err(Operation::AuthenticateOnce, params),
+            248 => err(Operation::ChangeGroups, params),
+            250 => err(Operation::ExchangeKeysForEncryption, params),
+            251 => err(Operation::GetProperties, params),
+            252 => err(Operation::SetProperties, params),
+            253 => err(Operation::RaiseEvent, params),
+            254 => err(Operation::Leave, params),
+            255 => err(Operation::Join, params),
             _ => Err(PacketReadError::UnknownOperationType(operation_type)),
         }
     }
@@ -222,10 +231,15 @@ impl InternalOperation {
         InternalOperation::read_with_type(c, direction, operation_type)
     }
     pub fn read_with_type(c: &mut Cursor<&[u8]>, direction: Direction, operation_type: u8) -> Result<InternalOperation, PacketReadError> {
+        fn err<'a>(operation: InternalOperation, params: HashMap<u8, ProtocolValue>) -> Result<InternalOperation, PacketReadError> {
+            debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
+            Err(PacketReadError::UnimplementedInternalOperationType(operation))
+        }
+
         let params = read_parameter_table(c)?;
 
         match operation_type {
-            0 => Ok(InternalOperation::InitEncryption),
+            0 => err(InternalOperation::InitEncryption, params),
             1 => match direction {
                 Direction::Send => Ok(InternalOperation::PingRequest {
                     local_time: protocol_get_int(&params, 1)?,
