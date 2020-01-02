@@ -22,7 +22,11 @@ pub enum Event {
     AzureNodeInfo,
     AuthEvent,
     LobbyStats,
-    AppStats,
+    AppStats {
+        game_count: u32,
+        peer_count: u32,
+        master_peer_count: u32,
+    },
     Match,
     QueueState,
     GameListUpdate,
@@ -48,7 +52,7 @@ pub enum Operation<'a> {
     JoinGame,
     CreateGame,
     LeaveLobby,
-    JoinLobby,
+    JoinLobby(),
     AuthenticateRequest {
         region: &'a str,
         application_id: &'a str, // could be parsed as u128

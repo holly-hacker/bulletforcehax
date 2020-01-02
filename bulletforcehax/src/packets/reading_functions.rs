@@ -146,7 +146,11 @@ impl Event {
             210 => err(Event::AzureNodeInfo, params),
             223 => err(Event::AuthEvent, params),
             224 => err(Event::LobbyStats, params),
-            226 => err(Event::AppStats, params),
+            226 => Ok(Event::AppStats {
+                game_count: protocol_get_int(&params, ParameterCode::GameCount)?,
+                peer_count: protocol_get_int(&params, ParameterCode::PeerCount)?,
+                master_peer_count: protocol_get_int(&params, ParameterCode::MasterPeerCount)?,
+            }),
             227 => err(Event::Match, params),
             228 => err(Event::QueueState, params),
             229 => err(Event::GameListUpdate, params),
@@ -190,7 +194,7 @@ impl Operation<'_> {
             226 => err(Operation::JoinGame, params),
             227 => err(Operation::CreateGame, params),
             228 => err(Operation::LeaveLobby, params),
-            229 => err(Operation::JoinLobby, params),
+            229 => Ok(Operation::JoinLobby()),
             230 => match direction {
                 Direction::Send if params.contains_key(&(ParameterCode::Secret as u8)) => Ok(Operation::AuthenticateRequest2 {
                     secret: protocol_get_str(&params, ParameterCode::Secret)?,
