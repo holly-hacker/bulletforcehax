@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 mod errors;
-pub use errors::PacketReadError;
+pub use errors::{PacketReadError, PacketReadResult};
 mod reading_functions;
 
 #[derive(Debug)]

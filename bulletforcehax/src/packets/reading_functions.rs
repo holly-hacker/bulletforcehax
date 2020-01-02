@@ -6,7 +6,7 @@ use std::io::Cursor;
 use super::*;
 
 /// Version of read_value that returns an error on a non-string
-fn read_string<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Option<&'a str>, PacketReadError> {
+fn read_string<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<Option<&'a str>> {
     match read_value(c)? {
         ProtocolValue::Null() => Ok(None),
         ProtocolValue::String(string) => Ok(Some(string)),
@@ -14,12 +14,12 @@ fn read_string<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Option<&'a str>, PacketRe
     }
 }
 
-fn read_value<'a>(c: &mut Cursor<&'a [u8]>) -> Result<ProtocolValue<'a>, PacketReadError> {
+fn read_value<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<ProtocolValue<'a>> {
     let protocol_type = c.read_u8()?;
     read_value_of_type(c, protocol_type)
 }
 
-fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Result<ProtocolValue<'a>, PacketReadError> {
+fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> PacketReadResult<ProtocolValue<'a>> {
     match protocol_type {
         42 => Ok(ProtocolValue::Null()),
         68 => Err(PacketReadError::UnimplementedProtocolValueType(ProtocolValue::Dictionary)),
@@ -54,7 +54,7 @@ fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Result
 }
 
 // TODO: look into returning a slice here and in read_value_array
-fn read_value_array_of_same_type<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Vec<ProtocolValue<'a>>, PacketReadError> {
+fn read_value_array_of_same_type<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<Vec<ProtocolValue<'a>>> {
     let len = c.read_u16::<BigEndian>()?;
     let protocol_type = c.read_u8()?;
     let mut ret = Vec::new();
@@ -64,7 +64,7 @@ fn read_value_array_of_same_type<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Vec<Pro
     Ok(ret)
 }
 
-fn read_value_array<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Vec<ProtocolValue<'a>>, PacketReadError> {
+fn read_value_array<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<Vec<ProtocolValue<'a>>> {
     let len = c.read_u16::<BigEndian>()?;
     let mut ret = Vec::new();
     for _i in 0..len {
@@ -73,7 +73,7 @@ fn read_value_array<'a>(c: &mut Cursor<&'a [u8]>) -> Result<Vec<ProtocolValue<'a
     Ok(ret)
 }
 
-fn read_hash_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, PacketReadError> {
+fn read_hash_table<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<HashMap<ProtocolValue<'a>, ProtocolValue<'a>>> {
     let mut ret = HashMap::new();
     let len = c.read_u16::<BigEndian>()?;
     for _i in 0..len {
@@ -82,7 +82,7 @@ fn read_hash_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<ProtocolValue
     Ok(ret)
 }
 
-fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<u8, ProtocolValue<'a>>, PacketReadError> {
+fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<HashMap<u8, ProtocolValue<'a>>> {
     let mut ret = HashMap::new();
     let len = c.read_u16::<BigEndian>()?;
     for _i in 0..len {
@@ -92,7 +92,7 @@ fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> Result<HashMap<u8, Prot
 }
 
 impl Packet<'_> {
-    pub fn read(data: &[u8], direction: Direction) -> Result<Packet, PacketReadError> {
+    pub fn read(data: &[u8], direction: Direction) -> PacketReadResult<Packet> {
         let mut c = Cursor::new(data);
 
         let magic = c.read_u8()?;
@@ -133,8 +133,8 @@ impl Packet<'_> {
 
 // TODO: how to check if I missed a field when deserializing?
 impl Event {
-    pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> Result<Event, PacketReadError> {
-        fn err(event: Event, params: HashMap<u8, ProtocolValue>) -> Result<Event, PacketReadError> {
+    pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> PacketReadResult<Event> {
+        fn err(event: Event, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<Event> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
             Err(PacketReadError::UnimplementedEventType(event))
         }
@@ -169,13 +169,13 @@ impl Event {
 }
 
 impl Operation<'_> {
-    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> Result<Operation<'a>, PacketReadError> {
+    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Operation<'a>> {
         let operation_type = c.read_u8()?;
 
         Operation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> Result<Operation<'a>, PacketReadError> {
-        fn err<'a>(operation: Operation<'static>, params: HashMap<u8, ProtocolValue>) -> Result<Operation<'a>, PacketReadError> {
+    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<Operation<'a>> {
+        fn err<'a>(operation: Operation<'static>, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<Operation<'a>> {
             debug!("Unimplemented Operation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedOperationType(operation))
         }
@@ -229,13 +229,13 @@ impl Operation<'_> {
 }
 
 impl InternalOperation {
-    pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> Result<InternalOperation, PacketReadError> {
+    pub fn read(c: &mut Cursor<&[u8]>, direction: Direction) -> PacketReadResult<InternalOperation> {
         let operation_type = c.read_u8()?;
 
         InternalOperation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type(c: &mut Cursor<&[u8]>, direction: Direction, operation_type: u8) -> Result<InternalOperation, PacketReadError> {
-        fn err<'a>(operation: InternalOperation, params: HashMap<u8, ProtocolValue>) -> Result<InternalOperation, PacketReadError> {
+    pub fn read_with_type(c: &mut Cursor<&[u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<InternalOperation> {
+        fn err<'a>(operation: InternalOperation, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
             debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedInternalOperationType(operation))
         }
@@ -258,7 +258,7 @@ impl InternalOperation {
     }
 }
 
-fn protocol_get_int<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<u32, PacketReadError> {
+fn protocol_get_int<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<u32> {
     check_contains_key(map, param_code)?;
 
     match map[&param_code] {
@@ -267,7 +267,7 @@ fn protocol_get_int<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) ->
     }
 }
 
-fn protocol_get_str<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<&'a str, PacketReadError> {
+fn protocol_get_str<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<&'a str> {
     check_contains_key(map, param_code)?;
 
     match map[&param_code] {
@@ -276,7 +276,7 @@ fn protocol_get_str<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) ->
     }
 }
 
-fn check_contains_key<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> Result<(), PacketReadError> {
+fn check_contains_key<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<()> {
     if !map.contains_key(&param_code) {
         error!("Couldn't find key {} in {:?}", param_code, map);
         return Err(PacketReadError::CouldNotFindKey(param_code));

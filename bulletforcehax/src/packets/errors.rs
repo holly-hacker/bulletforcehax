@@ -1,5 +1,7 @@
 use super::*;
 
+pub type PacketReadResult<T> = Result<T, PacketReadError>;
+
 #[derive(Debug)]
 pub enum PacketReadError {
     InvalidMagic(u8),
