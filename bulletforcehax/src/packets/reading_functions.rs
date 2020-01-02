@@ -258,29 +258,21 @@ impl InternalOperation {
     }
 }
 
-fn protocol_get_int<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<u32> {
-    check_contains_key(map, param_code)?;
+macro_rules! protocol_get_fn {
+    ($fn_name:ident, $type:ty, $protocol_type:path) => {
+        fn $fn_name<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<$type> {
+            if !map.contains_key(&param_code) {
+                error!("Couldn't find key {} in {:?}", param_code, map);
+                return Err(PacketReadError::CouldNotFindKey(param_code));
+            }
 
-    match map[&param_code] {
-        ProtocolValue::Integer(i) => Ok(i),
-        _ => Err(PacketReadError::UnexpectedProtocolValue),
-    }
+            match map[&param_code] {
+                $protocol_type(i) => Ok(i),
+                _ => Err(PacketReadError::UnexpectedProtocolValue),
+            }
+        }
+    };
 }
 
-fn protocol_get_str<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<&'a str> {
-    check_contains_key(map, param_code)?;
-
-    match map[&param_code] {
-        ProtocolValue::String(s) => Ok(s),
-        _ => Err(PacketReadError::UnexpectedProtocolValue),
-    }
-}
-
-fn check_contains_key<'a>(map: &HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<()> {
-    if !map.contains_key(&param_code) {
-        error!("Couldn't find key {} in {:?}", param_code, map);
-        return Err(PacketReadError::CouldNotFindKey(param_code));
-    }
-
-    Ok(())
-}
+protocol_get_fn!(protocol_get_int, u32, ProtocolValue::Integer);
+protocol_get_fn!(protocol_get_str, &'a str, ProtocolValue::String);
