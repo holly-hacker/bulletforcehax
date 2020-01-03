@@ -408,58 +408,31 @@ impl PlayerProperties<'_> {
     }
 }
 
-macro_rules! unwrap_protocol_type_fn {
-    ($fn_name:ident, $type:ty, $protocol_type:path) => {
-        fn $fn_name<'a>(protocol_type: ProtocolValue<'a>) -> PacketReadResult<$type> {
+#[allow(dead_code)]
+macro_rules! gen_protocol_type_functions {
+    ($unwrap_fn_name:ident, $get_prot_fn_name:ident, $get_u8_fn_name:ident, $type:ty, $protocol_type:path) => {
+        fn $unwrap_fn_name<'a>(protocol_type: ProtocolValue<'a>) -> PacketReadResult<$type> {
             match protocol_type {
                 $protocol_type(i) => Ok(i),
                 _ => Err(PacketReadError::UnexpectedProtocolValue),
             }
         }
-    };
-}
 
-macro_rules! unwrap_fn {
-    ($fn_name:ident, $val_type:ty, $unwrap_val_fn:ident) => {
-        fn $fn_name<'a>(map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, key: ProtocolValue<'static>) -> PacketReadResult<$val_type> {
+        #[allow(dead_code)]
+        fn $get_prot_fn_name<'a>(map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, key: ProtocolValue<'static>) -> PacketReadResult<$type> {
             match map.remove(&key) {
-                Some(val) => Ok($unwrap_val_fn(val)?),
+                Some(val) => Ok($unwrap_fn_name(val)?),
                 None => {
                     error!("Couldn't find key {:?} in {:?}", key, map);
                     Err(PacketReadError::CouldNotFindKeyProtocolValue(key))
                 }
             }
         }
-    };
-}
 
-unwrap_fn!(get_string, &'a str, unwrap_protocol_string);
-unwrap_fn!(get_bool, bool, unwrap_protocol_bool);
-unwrap_fn!(get_byte, u8, unwrap_protocol_byte);
-unwrap_fn!(get_short, u16, unwrap_protocol_short);
-unwrap_fn!(get_int, u32, unwrap_protocol_int);
-unwrap_fn!(get_float, f32, unwrap_protocol_float);
-unwrap_fn!(get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
-
-// note: these take ownership, not references
-unwrap_protocol_type_fn!(unwrap_protocol_bool, bool, ProtocolValue::Bool);
-unwrap_protocol_type_fn!(unwrap_protocol_byte, u8, ProtocolValue::Byte);
-unwrap_protocol_type_fn!(unwrap_protocol_short, u16, ProtocolValue::Short);
-unwrap_protocol_type_fn!(unwrap_protocol_int, u32, ProtocolValue::Integer);
-unwrap_protocol_type_fn!(unwrap_protocol_float, f32, ProtocolValue::Float);
-unwrap_protocol_type_fn!(unwrap_protocol_string, &'a str, ProtocolValue::String);
-unwrap_protocol_type_fn!(unwrap_protocol_array, Vec<ProtocolValue<'a>>, ProtocolValue::Array);
-unwrap_protocol_type_fn!(
-    unwrap_protocol_hashtable,
-    HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
-    ProtocolValue::Hashtable
-);
-
-macro_rules! protocol_get_fn {
-    ($fn_name:ident, $type:ty, $unwrap_fn:ident) => {
-        fn $fn_name<'a>(map: &mut HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<$type> {
+        #[allow(dead_code)]
+        fn $get_u8_fn_name<'a>(map: &mut HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<$type> {
             match map.remove(&param_code) {
-                Some(val) => Ok($unwrap_fn(val)?),
+                Some(val) => Ok($unwrap_fn_name(val)?),
                 None => {
                     error!("Couldn't find key {} in {:?}", param_code, map);
                     Err(PacketReadError::CouldNotFindKey(param_code))
@@ -469,13 +442,23 @@ macro_rules! protocol_get_fn {
     };
 }
 
-// note: these remove the keys from the hashtable
-protocol_get_fn!(protocol_get_bool, bool, unwrap_protocol_bool);
-protocol_get_fn!(protocol_get_int, u32, unwrap_protocol_int);
-protocol_get_fn!(protocol_get_str, &'a str, unwrap_protocol_string);
-protocol_get_fn!(protocol_get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
-protocol_get_fn!(
+gen_protocol_type_functions!(unwrap_protocol_string, get_string, protocol_get_str, &'a str, ProtocolValue::String);
+gen_protocol_type_functions!(unwrap_protocol_bool, get_bool, protocol_get_bool, bool, ProtocolValue::Bool);
+gen_protocol_type_functions!(unwrap_protocol_byte, get_byte, protocol_get_byte, u8, ProtocolValue::Byte);
+gen_protocol_type_functions!(unwrap_protocol_short, get_short, protocol_get_short, u16, ProtocolValue::Short);
+gen_protocol_type_functions!(unwrap_protocol_int, get_int, protocol_get_int, u32, ProtocolValue::Integer);
+gen_protocol_type_functions!(unwrap_protocol_float, get_float, protocol_get_float, f32, ProtocolValue::Float);
+gen_protocol_type_functions!(
+    unwrap_protocol_hashtable,
+    get_hashtable,
     protocol_get_hashtable,
     HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
-    unwrap_protocol_hashtable
+    ProtocolValue::Hashtable
+);
+gen_protocol_type_functions!(
+    unwrap_protocol_array,
+    get_array,
+    protocol_get_array,
+    Vec<ProtocolValue<'a>>,
+    ProtocolValue::Array
 );
