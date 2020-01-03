@@ -1,5 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt};
-use log::{debug, error};
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::io::Cursor;
 
@@ -423,7 +423,7 @@ macro_rules! gen_protocol_type_functions {
             match map.remove(&key) {
                 Some(val) => Ok($unwrap_fn_name(val)?),
                 None => {
-                    error!("Couldn't find key {:?} in {:?}", key, map);
+                    warn!("Couldn't find key {:?} in {:?}", key, map);
                     Err(PacketReadError::CouldNotFindKeyProtocolValue(key))
                 }
             }
@@ -434,7 +434,7 @@ macro_rules! gen_protocol_type_functions {
             match map.remove(&param_code) {
                 Some(val) => Ok($unwrap_fn_name(val)?),
                 None => {
-                    error!("Couldn't find key {} in {:?}", param_code, map);
+                    warn!("Couldn't find key {} in {:?}", param_code, map);
                     Err(PacketReadError::CouldNotFindKey(param_code))
                 }
             }
