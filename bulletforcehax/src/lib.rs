@@ -27,6 +27,7 @@ pub fn main() -> Result<(), JsValue> {
 }
 
 // TODO: support returning multiple sent packets
+// TODO: perhaps pass boolean or enum that tells which socket we're on
 #[wasm_bindgen]
 pub fn sock_send(data: &[u8]) -> Vec<u8> {
     let mut c = Cursor::new(data);

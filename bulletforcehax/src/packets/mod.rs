@@ -50,7 +50,28 @@ pub enum Operation<'a> {
     CancelJoinRandom,
     JoinRandomGame,
     JoinGame,
-    CreateGame,
+    CreateGameRequest {
+        room_name: &'a str,
+    },
+    CreateGameResponse {
+        room_name: &'a str,
+        address: &'a str,
+        secret: &'a str,
+    },
+    CreateGameRequest2 {
+        broadcast: bool,
+        room_name: &'a str,
+        game_properties: GameProperties<'a>,
+        player_properties: PlayerProperties<'a>,
+        room_option_flags: u32,
+        cleanup_cache_on_leave: bool,
+        check_user_on_join: bool,
+    },
+    CreateGameResponse2 {
+        actor_list: Vec<u32>,
+        actor_nr: u32,
+        game_properties: GameProperties<'a>,
+    },
     LeaveLobby,
     JoinLobby(),
     AuthenticateRequest {
@@ -140,6 +161,51 @@ pub struct GameInfo<'a> {
     byte_252: u8,
     byte_253: bool,
     byte_255: u8,
+}
+
+#[derive(Debug)]
+pub struct GameProperties<'a> {
+    spectate_for_mods_only: bool,
+    max_ping: u16,
+    banned_weapon_message: &'a str,
+    time_scale: f32,
+    match_countdown_time: f32,
+    round_started: bool,
+    score_limit: u32,
+    gun_game_preset: u32,
+    byte_249: bool,
+    /// List of some fields that are present in this struct
+    byte_250: Vec<&'a str>,
+    byte_253: bool,
+    byte_254: bool,
+    byte_255: u8,
+    /// Only present in response
+    byte_248: Option<u32>,
+
+    // fields contained in byte_250
+    room_name: &'a str,
+    map_name: &'a str,
+    mode_name: &'a str,
+    password: &'a str,
+    hardcore: bool,
+    dedicated: bool,
+    match_started: bool,
+    mean_kd: f32,
+    mean_rank: u32,
+    room_type: u8,
+    switching_map: bool,
+    allowed_weapons: u64,
+    event_code: u32,
+    average_rank: u32,
+    game_id: &'a str,
+    room_id: &'a str,
+    store_id: &'a str,
+}
+
+#[derive(Debug)]
+pub enum PlayerProperties<'a> {
+    NameOnly(&'a str),
+    // TODO: extend this when there's more info
 }
 
 // This would be an enum, but Rust does not allow multiple enum members with the same value

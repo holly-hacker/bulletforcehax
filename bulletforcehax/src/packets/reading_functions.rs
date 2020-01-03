@@ -201,11 +201,39 @@ impl Operation<'_> {
             224 => err(Operation::CancelJoinRandom, params),
             225 => err(Operation::JoinRandomGame, params),
             226 => err(Operation::JoinGame, params),
-            227 => err(Operation::CreateGame, params),
+            227 => match direction {
+                Direction::Send if !params.contains_key(&ParameterCode::GameProperties) => Ok(Operation::CreateGameRequest {
+                    room_name: protocol_get_str(&mut params, ParameterCode::RoomName)?,
+                }),
+                Direction::Send => Ok(Operation::CreateGameRequest2 {
+                    broadcast: protocol_get_bool(&mut params, ParameterCode::Broadcast)?,
+                    room_name: protocol_get_str(&mut params, ParameterCode::RoomName)?,
+                    game_properties: GameProperties::new_from_hashtable(protocol_get_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                    player_properties: PlayerProperties::new_from_hashtable(protocol_get_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+                    room_option_flags: protocol_get_int(&mut params, ParameterCode::RoomOptionFlags)?,
+                    cleanup_cache_on_leave: protocol_get_bool(&mut params, ParameterCode::CleanupCacheOnLeave)?,
+                    check_user_on_join: protocol_get_bool(&mut params, ParameterCode::CheckUserOnJoin)?,
+                }),
+                Direction::Recv if !params.contains_key(&ParameterCode::GameProperties) => Ok(Operation::CreateGameResponse {
+                    room_name: protocol_get_str(&mut params, ParameterCode::RoomName)?,
+                    secret: protocol_get_str(&mut params, ParameterCode::Secret)?,
+                    address: protocol_get_str(&mut params, ParameterCode::Address)?,
+                }),
+                Direction::Recv => Ok(Operation::CreateGameResponse2 {
+                    actor_list: protocol_get_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
+                        protocol_array
+                            .into_iter()
+                            .map(|protocol_value| unwrap_protocol_int(protocol_value).expect("CreateGame response 2 had a non-int actor id"))
+                            .collect()
+                    })?,
+                    actor_nr: protocol_get_int(&mut params, ParameterCode::ActorNr)?,
+                    game_properties: GameProperties::new_from_hashtable(protocol_get_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                }),
+            },
             228 => err(Operation::LeaveLobby, params),
             229 => Ok(Operation::JoinLobby()),
             230 => match direction {
-                Direction::Send if params.contains_key(&(ParameterCode::Secret as u8)) => Ok(Operation::AuthenticateRequest2 {
+                Direction::Send if params.contains_key(&ParameterCode::Secret) => Ok(Operation::AuthenticateRequest2 {
                     secret: protocol_get_str(&mut params, ParameterCode::Secret)?,
                 }),
                 Direction::Send => Ok(Operation::AuthenticateRequest {
@@ -213,12 +241,12 @@ impl Operation<'_> {
                     application_id: protocol_get_str(&mut params, ParameterCode::ApplicationId)?,
                     region: protocol_get_str(&mut params, ParameterCode::Region)?,
                 }),
-                Direction::Recv if params.contains_key(&(ParameterCode::Position as u8)) => Ok(Operation::AuthenticateResponse2 {
+                Direction::Recv if params.contains_key(&ParameterCode::Position) => Ok(Operation::AuthenticateResponse2 {
                     secret: protocol_get_str(&mut params, ParameterCode::Secret)?,
                     position: protocol_get_int(&mut params, ParameterCode::Position)?,
                 }),
                 Direction::Recv => Ok(Operation::AuthenticateResponse {
-                    unknown: protocol_get_str(&mut params, 196)?,
+                    unknown: protocol_get_str(&mut params, 196)?, // TODO: [243, 3, 230, 0, 0, 42, 0, 0]
                     secret: protocol_get_str(&mut params, ParameterCode::Secret)?,
                     address: protocol_get_str(&mut params, ParameterCode::Address)?,
                     user_id: protocol_get_str(&mut params, ParameterCode::UserId)?,
@@ -282,27 +310,6 @@ impl GameInfo<'_> {
         Ok(map)
     }
     pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<Option<GameInfo<'a>>> {
-        macro_rules! unwrap_fn {
-            ($fn_name:ident, $val_type:ty, $unwrap_val_fn:ident) => {
-                fn $fn_name<'a>(map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, key: ProtocolValue<'static>) -> PacketReadResult<$val_type> {
-                    match map.remove(&key) {
-                        Some(val) => Ok($unwrap_val_fn(val)?),
-                        None => {
-                            error!("Couldn't find key {:?} in {:?}", key, map);
-                            Err(PacketReadError::CouldNotFindKeyProtocolValue(key))
-                        }
-                    }
-                }
-            };
-        }
-
-        unwrap_fn!(get_string, &'a str, unwrap_protocol_string);
-        unwrap_fn!(get_bool, bool, unwrap_protocol_bool);
-        unwrap_fn!(get_byte, u8, unwrap_protocol_byte);
-        unwrap_fn!(get_int, u32, unwrap_protocol_int);
-        unwrap_fn!(get_float, f32, unwrap_protocol_float);
-        unwrap_fn!(get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
-
         if table.contains_key(&ProtocolValue::Byte(251)) {
             // got removed
             return Ok(None);
@@ -342,6 +349,65 @@ impl GameInfo<'_> {
     }
 }
 
+impl GameProperties<'_> {
+    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<GameProperties<'a>> {
+        Ok(GameProperties {
+            spectate_for_mods_only: get_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
+            max_ping: get_short(&mut table, ProtocolValue::String("maxPing"))?,
+            banned_weapon_message: get_string(&mut table, ProtocolValue::String("bannedweaponmessage"))?,
+            time_scale: get_float(&mut table, ProtocolValue::String("timeScale"))?,
+            match_countdown_time: get_float(&mut table, ProtocolValue::String("matchCountdownTime"))?,
+            round_started: get_bool(&mut table, ProtocolValue::String("roundStarted"))?,
+            score_limit: get_int(&mut table, ProtocolValue::String("scorelimit"))?,
+            gun_game_preset: get_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
+            byte_249: get_bool(&mut table, ProtocolValue::Byte(249))?,
+            byte_250: get_array(&mut table, ProtocolValue::Byte(250))?
+                .into_iter()
+                .map(|protocol_val| unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::byte_250"))
+                .collect(),
+            byte_253: get_bool(&mut table, ProtocolValue::Byte(253))?,
+            byte_254: get_bool(&mut table, ProtocolValue::Byte(254))?,
+            byte_255: get_byte(&mut table, ProtocolValue::Byte(255))?,
+            byte_248: get_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
+            room_name: get_string(&mut table, ProtocolValue::String("roomName"))?,
+            map_name: get_string(&mut table, ProtocolValue::String("mapName"))?,
+            mode_name: get_string(&mut table, ProtocolValue::String("modeName"))?,
+            password: get_string(&mut table, ProtocolValue::String("password"))?,
+            hardcore: get_bool(&mut table, ProtocolValue::String("hardcore"))?,
+            dedicated: get_bool(&mut table, ProtocolValue::String("dedicated"))?,
+            match_started: get_bool(&mut table, ProtocolValue::String("matchStarted"))?,
+            mean_kd: get_float(&mut table, ProtocolValue::String("meanKD"))?,
+            mean_rank: get_int(&mut table, ProtocolValue::String("meanRank"))?,
+            room_type: get_byte(&mut table, ProtocolValue::String("roomType"))?,
+            switching_map: get_bool(&mut table, ProtocolValue::String("switchingmap"))?,
+            allowed_weapons: {
+                // this is an array of 2 u32s, but we save this as a u64 because it makes more sense
+                let mut arr = get_array(&mut table, ProtocolValue::String("allowedweapons"))?;
+                if arr.len() != 2 {
+                    return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
+                }
+                let int2 = unwrap_protocol_int(arr.remove(1))? as u64;
+                let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
+                int1 | (int2 << 32)
+            },
+            event_code: get_int(&mut table, ProtocolValue::String("eventcode"))?,
+            average_rank: get_int(&mut table, ProtocolValue::String("averagerank"))?,
+            game_id: get_string(&mut table, ProtocolValue::String("gameID"))?,
+            room_id: get_string(&mut table, ProtocolValue::String("roomID"))?,
+            store_id: get_string(&mut table, ProtocolValue::String("storeID"))?,
+        })
+    }
+}
+
+impl PlayerProperties<'_> {
+    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<PlayerProperties<'a>> {
+        if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
+            return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
+        }
+        Ok(PlayerProperties::NameOnly(get_string(&mut table, ProtocolValue::Byte(255))?))
+    }
+}
+
 macro_rules! unwrap_protocol_type_fn {
     ($fn_name:ident, $type:ty, $protocol_type:path) => {
         fn $fn_name<'a>(protocol_type: ProtocolValue<'a>) -> PacketReadResult<$type> {
@@ -353,9 +419,32 @@ macro_rules! unwrap_protocol_type_fn {
     };
 }
 
+macro_rules! unwrap_fn {
+    ($fn_name:ident, $val_type:ty, $unwrap_val_fn:ident) => {
+        fn $fn_name<'a>(map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, key: ProtocolValue<'static>) -> PacketReadResult<$val_type> {
+            match map.remove(&key) {
+                Some(val) => Ok($unwrap_val_fn(val)?),
+                None => {
+                    error!("Couldn't find key {:?} in {:?}", key, map);
+                    Err(PacketReadError::CouldNotFindKeyProtocolValue(key))
+                }
+            }
+        }
+    };
+}
+
+unwrap_fn!(get_string, &'a str, unwrap_protocol_string);
+unwrap_fn!(get_bool, bool, unwrap_protocol_bool);
+unwrap_fn!(get_byte, u8, unwrap_protocol_byte);
+unwrap_fn!(get_short, u16, unwrap_protocol_short);
+unwrap_fn!(get_int, u32, unwrap_protocol_int);
+unwrap_fn!(get_float, f32, unwrap_protocol_float);
+unwrap_fn!(get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
+
 // note: these take ownership, not references
 unwrap_protocol_type_fn!(unwrap_protocol_bool, bool, ProtocolValue::Bool);
 unwrap_protocol_type_fn!(unwrap_protocol_byte, u8, ProtocolValue::Byte);
+unwrap_protocol_type_fn!(unwrap_protocol_short, u16, ProtocolValue::Short);
 unwrap_protocol_type_fn!(unwrap_protocol_int, u32, ProtocolValue::Integer);
 unwrap_protocol_type_fn!(unwrap_protocol_float, f32, ProtocolValue::Float);
 unwrap_protocol_type_fn!(unwrap_protocol_string, &'a str, ProtocolValue::String);
@@ -381,8 +470,10 @@ macro_rules! protocol_get_fn {
 }
 
 // note: these remove the keys from the hashtable
+protocol_get_fn!(protocol_get_bool, bool, unwrap_protocol_bool);
 protocol_get_fn!(protocol_get_int, u32, unwrap_protocol_int);
 protocol_get_fn!(protocol_get_str, &'a str, unwrap_protocol_string);
+protocol_get_fn!(protocol_get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
 protocol_get_fn!(
     protocol_get_hashtable,
     HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
