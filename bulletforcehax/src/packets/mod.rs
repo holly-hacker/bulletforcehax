@@ -29,7 +29,7 @@ pub enum Event<'a> {
     },
     Match,
     QueueState,
-    GameListUpdate(Vec<GameInfo<'a>>),
+    GameListUpdate(HashMap<&'a str, Option<GameInfo<'a>>>),
     GameList(Vec<GameInfo<'a>>),
     CacheSliceChanged,
     ErrorInfo,
@@ -136,6 +136,7 @@ pub struct GameInfo<'a> {
     mean_kd: f32,
     average_rank: u32,
     event_code: u32,
+    // byte_251: bool, mentions whether this game got removed. either this or the other fields are present
     byte_252: u8,
     byte_253: bool,
     byte_255: u8,

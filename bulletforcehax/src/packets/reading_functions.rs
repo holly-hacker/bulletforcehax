@@ -155,10 +155,15 @@ impl Event<'_> {
                 &mut params,
                 ParameterCode::GameList,
             )?)?)),
-            230 => Ok(Event::GameList(GameInfo::new_from_hashtable_table(protocol_get_hashtable(
-                &mut params,
-                ParameterCode::GameList,
-            )?)?)),
+            230 => Ok(Event::GameList(
+                GameInfo::new_from_hashtable_table(protocol_get_hashtable(&mut params, ParameterCode::GameList)?).map(|mut table| {
+                    table
+                        .drain()
+                        .map(|(_key, value)| value.expect("GameList packet contained removed game"))
+                        .into_iter()
+                        .collect()
+                })?,
+            )),
             250 => err(Event::CacheSliceChanged, params),
             251 => err(Event::ErrorInfo, params),
             253 => match direction {
@@ -263,18 +268,20 @@ impl InternalOperation {
 }
 
 impl GameInfo<'_> {
-    pub fn new_from_hashtable_table<'a>(big_table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<Vec<GameInfo<'a>>> {
-        let mut vec: Vec<GameInfo<'a>> = Vec::new();
-        for (_key, value) in big_table {
+    pub fn new_from_hashtable_table<'a>(
+        big_table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+    ) -> PacketReadResult<HashMap<&'a str, Option<GameInfo<'a>>>> {
+        let mut map: HashMap<&'a str, Option<GameInfo<'a>>> = HashMap::new();
+        for (key, value) in big_table {
             // could look into getting map past the borrow checker
             let ht = unwrap_protocol_hashtable(value)?;
-            let info = GameInfo::new_from_hashtable(ht)?;
-            vec.push(info);
+            let val = GameInfo::new_from_hashtable(ht)?;
+            map.insert(unwrap_protocol_string(key)?, val);
         }
 
-        Ok(vec)
+        Ok(map)
     }
-    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<GameInfo<'a>> {
+    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<Option<GameInfo<'a>>> {
         macro_rules! unwrap_fn {
             ($fn_name:ident, $val_type:ty, $unwrap_val_fn:ident) => {
                 fn $fn_name<'a>(map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, key: ProtocolValue<'static>) -> PacketReadResult<$val_type> {
@@ -296,7 +303,12 @@ impl GameInfo<'_> {
         unwrap_fn!(get_float, f32, unwrap_protocol_float);
         unwrap_fn!(get_array, Vec<ProtocolValue<'a>>, unwrap_protocol_array);
 
-        Ok(GameInfo {
+        if table.contains_key(&ProtocolValue::Byte(251)) {
+            // got removed
+            return Ok(None);
+        }
+
+        Ok(Some(GameInfo {
             game_id: get_string(&mut table, ProtocolValue::String("gameID"))?,
             room_id: get_string(&mut table, ProtocolValue::String("roomID"))?,
             store_id: get_string(&mut table, ProtocolValue::String("storeID"))?,
@@ -326,7 +338,7 @@ impl GameInfo<'_> {
             byte_252: get_byte(&mut table, ProtocolValue::Byte(252))?,
             byte_253: get_bool(&mut table, ProtocolValue::Byte(253))?,
             byte_255: get_byte(&mut table, ProtocolValue::Byte(255))?,
-        })
+        }))
     }
 }
 
