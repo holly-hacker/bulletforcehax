@@ -129,10 +129,9 @@ impl Packet<'_> {
     }
 }
 
-// TODO: how to check if I missed a field when deserializing?
 impl Event<'_> {
     pub fn read<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Event<'a>> {
-        fn err<'a>(event: Event<'static>, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
+        fn err<'a>(event: Event<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
             Err(PacketReadError::UnimplementedEventType(event))
         }
@@ -140,17 +139,17 @@ impl Event<'_> {
         let event_type = c.read_u8()?;
         let mut params = read_parameter_table(c)?;
 
-        match event_type {
-            210 => err(Event::AzureNodeInfo, params),
-            223 => err(Event::AuthEvent, params),
-            224 => err(Event::LobbyStats, params),
+        let ret = match event_type {
+            210 => err(Event::AzureNodeInfo, &params),
+            223 => err(Event::AuthEvent, &params),
+            224 => err(Event::LobbyStats, &params),
             226 => Ok(Event::AppStats {
                 game_count: get_protocol_int(&mut params, ParameterCode::GameCount)?,
                 peer_count: get_protocol_int(&mut params, ParameterCode::PeerCount)?,
                 master_peer_count: get_protocol_int(&mut params, ParameterCode::MasterPeerCount)?,
             }),
-            227 => err(Event::Match, params),
-            228 => err(Event::QueueState, params),
+            227 => err(Event::Match, &params),
+            228 => err(Event::QueueState, &params),
             229 => Ok(Event::GameListUpdate(GameInfo::new_from_hashtable_table(get_protocol_hashtable(
                 &mut params,
                 ParameterCode::GameList,
@@ -164,16 +163,22 @@ impl Event<'_> {
                         .collect()
                 })?,
             )),
-            250 => err(Event::CacheSliceChanged, params),
-            251 => err(Event::ErrorInfo, params),
+            250 => err(Event::CacheSliceChanged, &params),
+            251 => err(Event::ErrorInfo, &params),
             253 => match direction {
-                Direction::Send => err(Event::SetProperties, params),
-                Direction::Recv => err(Event::PropertiesChanged, params),
+                Direction::Send => err(Event::SetProperties, &params),
+                Direction::Recv => err(Event::PropertiesChanged, &params),
             },
-            254 => err(Event::Leave, params),
-            255 => err(Event::Join, params),
+            254 => err(Event::Leave, &params),
+            255 => err(Event::Join, &params),
             _ => Err(PacketReadError::UnknownEventType(event_type)),
+        };
+
+        if ret.is_ok() && params.len() > 0 {
+            warn!("Missed event parameters: {:#?}, obj is {:#?}", params, ret);
         }
+
+        ret
     }
 }
 
@@ -184,23 +189,23 @@ impl Operation<'_> {
         Operation::read_with_type(c, direction, operation_type)
     }
     pub fn read_with_type<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<Operation<'a>> {
-        fn err<'a>(operation: Operation<'static>, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<Operation<'a>> {
+        fn err<'a>(operation: Operation<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Operation<'a>> {
             debug!("Unimplemented Operation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedOperationType(operation))
         }
 
         let mut params = read_parameter_table(c)?;
 
-        match operation_type {
-            217 => err(Operation::GetGameList, params),
-            218 => err(Operation::ServerSettings, params),
-            219 => err(Operation::WebRpc, params),
-            220 => err(Operation::GetRegions, params),
-            221 => err(Operation::GetLobbyStats, params),
-            222 => err(Operation::FindFriends, params),
-            224 => err(Operation::CancelJoinRandom, params),
-            225 => err(Operation::JoinRandomGame, params),
-            226 => err(Operation::JoinGame, params),
+        let ret = match operation_type {
+            217 => err(Operation::GetGameList, &params),
+            218 => err(Operation::ServerSettings, &params),
+            219 => err(Operation::WebRpc, &params),
+            220 => err(Operation::GetRegions, &params),
+            221 => err(Operation::GetLobbyStats, &params),
+            222 => err(Operation::FindFriends, &params),
+            224 => err(Operation::CancelJoinRandom, &params),
+            225 => err(Operation::JoinRandomGame, &params),
+            226 => err(Operation::JoinGame, &params),
             227 => match direction {
                 Direction::Send if !params.contains_key(&ParameterCode::GameProperties) => Ok(Operation::CreateGameRequest {
                     room_name: get_protocol_string(&mut params, ParameterCode::RoomName)?,
@@ -230,7 +235,7 @@ impl Operation<'_> {
                     game_properties: GameProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
                 }),
             },
-            228 => err(Operation::LeaveLobby, params),
+            228 => err(Operation::LeaveLobby, &params),
             229 => Ok(Operation::JoinLobby()),
             230 => match direction {
                 Direction::Send if params.contains_key(&ParameterCode::Secret) => Ok(Operation::AuthenticateRequest2 {
@@ -252,16 +257,22 @@ impl Operation<'_> {
                     user_id: get_protocol_string(&mut params, ParameterCode::UserId)?,
                 }),
             },
-            231 => err(Operation::AuthenticateOnce, params),
-            248 => err(Operation::ChangeGroups, params),
-            250 => err(Operation::ExchangeKeysForEncryption, params),
-            251 => err(Operation::GetProperties, params),
-            252 => err(Operation::SetProperties, params),
-            253 => err(Operation::RaiseEvent, params),
-            254 => err(Operation::Leave, params),
-            255 => err(Operation::Join, params),
+            231 => err(Operation::AuthenticateOnce, &params),
+            248 => err(Operation::ChangeGroups, &params),
+            250 => err(Operation::ExchangeKeysForEncryption, &params),
+            251 => err(Operation::GetProperties, &params),
+            252 => err(Operation::SetProperties, &params),
+            253 => err(Operation::RaiseEvent, &params),
+            254 => err(Operation::Leave, &params),
+            255 => err(Operation::Join, &params),
             _ => Err(PacketReadError::UnknownOperationType(operation_type)),
+        };
+
+        if ret.is_ok() && params.len() > 0 {
+            warn!("Missed operation parameters: {:#?}, obj is {:#?}", params, ret);
         }
+
+        ret
     }
 }
 
@@ -272,15 +283,15 @@ impl InternalOperation {
         InternalOperation::read_with_type(c, direction, operation_type)
     }
     pub fn read_with_type<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<InternalOperation> {
-        fn err<'a>(operation: InternalOperation, params: HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
+        fn err<'a>(operation: InternalOperation, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
             debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedInternalOperationType(operation))
         }
 
         let mut params = read_parameter_table(c)?;
 
-        match operation_type {
-            0 => err(InternalOperation::InitEncryption, params),
+        let ret = match operation_type {
+            0 => err(InternalOperation::InitEncryption, &params),
             1 => match direction {
                 Direction::Send => Ok(InternalOperation::PingRequest {
                     local_time: get_protocol_int(&mut params, 1)?,
@@ -291,7 +302,13 @@ impl InternalOperation {
                 }),
             },
             _ => Err(PacketReadError::UnknownInternalOperationType(operation_type)),
+        };
+
+        if ret.is_ok() && params.len() > 0 {
+            warn!("Missed operation parameters: {:#?}, obj is {:#?}", params, ret);
         }
+
+        ret
     }
 }
 
@@ -315,7 +332,7 @@ impl GameInfo<'_> {
             return Ok(None);
         }
 
-        Ok(Some(GameInfo {
+        let ret = Ok(Some(GameInfo {
             game_id: get_u8_string(&mut table, ProtocolValue::String("gameID"))?,
             room_id: get_u8_string(&mut table, ProtocolValue::String("roomID"))?,
             store_id: get_u8_string(&mut table, ProtocolValue::String("storeID"))?,
@@ -345,13 +362,19 @@ impl GameInfo<'_> {
             byte_252: get_u8_byte(&mut table, ProtocolValue::Byte(252))?,
             byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253))?,
             byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255))?,
-        }))
+        }));
+
+        if ret.is_ok() && table.len() > 0 {
+            warn!("Missed GameInfo parameters: {:#?}, obj is {:#?}", table, ret);
+        }
+
+        ret
     }
 }
 
 impl GameProperties<'_> {
     pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<GameProperties<'a>> {
-        Ok(GameProperties {
+        let ret = Ok(GameProperties {
             spectate_for_mods_only: get_u8_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
             max_ping: get_u8_short(&mut table, ProtocolValue::String("maxPing"))?,
             banned_weapon_message: get_u8_string(&mut table, ProtocolValue::String("bannedweaponmessage"))?,
@@ -395,7 +418,13 @@ impl GameProperties<'_> {
             game_id: get_u8_string(&mut table, ProtocolValue::String("gameID"))?,
             room_id: get_u8_string(&mut table, ProtocolValue::String("roomID"))?,
             store_id: get_u8_string(&mut table, ProtocolValue::String("storeID"))?,
-        })
+        });
+
+        if ret.is_ok() && table.len() > 0 {
+            warn!("Missed GameProperties parameters: {:#?}, obj is {:#?}", table, ret);
+        }
+
+        ret
     }
 }
 
@@ -404,7 +433,14 @@ impl PlayerProperties<'_> {
         if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
             return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
         }
-        Ok(PlayerProperties::NameOnly(get_u8_string(&mut table, ProtocolValue::Byte(255))?))
+        let ret = Ok(PlayerProperties::NameOnly(get_u8_string(&mut table, ProtocolValue::Byte(255))?));
+
+        // can't be hit, actually
+        if ret.is_ok() && table.len() > 0 {
+            warn!("Missed PlayerProperties parameters: {:#?}, obj is {:#?}", table, ret);
+        }
+
+        ret
     }
 }
 
