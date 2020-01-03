@@ -10,7 +10,7 @@ pub enum Packet<'a> {
     InitResponse,
     OperationRequest(Operation<'a>),
     OperationResponse(i16, Option<&'a str>, Operation<'a>),
-    Event(Event),
+    Event(Event<'a>),
     InternalOperationRequest(InternalOperation),
     InternalOperationResponse(i16, Option<&'a str>, InternalOperation),
     Message,
@@ -18,7 +18,7 @@ pub enum Packet<'a> {
 }
 
 #[derive(Debug)]
-pub enum Event {
+pub enum Event<'a> {
     AzureNodeInfo,
     AuthEvent,
     LobbyStats,
@@ -29,8 +29,8 @@ pub enum Event {
     },
     Match,
     QueueState,
-    GameListUpdate,
-    GameList,
+    GameListUpdate(Vec<GameInfo<'a>>),
+    GameList(Vec<GameInfo<'a>>),
     CacheSliceChanged,
     ErrorInfo,
     PropertiesChanged,
@@ -115,6 +115,30 @@ pub enum ProtocolValue<'a> {
 pub enum Direction {
     Send,
     Recv,
+}
+
+#[derive(Debug)]
+pub struct GameInfo<'a> {
+    game_id: &'a str,
+    room_id: &'a str,
+    store_id: &'a str,
+    room_name: &'a str,
+    mode_name: &'a str,
+    password: &'a str,
+    map_name: &'a str,
+    match_started: bool,
+    switching_map: bool,
+    room_type: u8, // could become c-style enum
+    dedicated: bool,
+    hardcore: bool,
+    allowed_weapons: u64,
+    mean_rank: f32,
+    mean_kd: f32,
+    average_rank: u32,
+    event_code: u32,
+    byte_252: u8,
+    byte_253: bool,
+    byte_255: u8,
 }
 
 // This would be an enum, but Rust does not allow multiple enum members with the same value

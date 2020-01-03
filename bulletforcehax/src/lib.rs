@@ -1,6 +1,7 @@
 extern crate wasm_bindgen;
 
 use log::{debug, error, info, Level};
+use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
 mod packets;
@@ -28,7 +29,8 @@ pub fn main() -> Result<(), JsValue> {
 // TODO: support returning multiple sent packets
 #[wasm_bindgen]
 pub fn sock_send(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(data, packets::Direction::Send) {
+    let mut c = Cursor::new(data);
+    match packets::Packet::read(&mut c, packets::Direction::Send) {
         Ok(packet) => {
             debug!("SEND: {:?}", packet);
             Vec::from(data)
@@ -42,7 +44,8 @@ pub fn sock_send(data: &[u8]) -> Vec<u8> {
 
 #[wasm_bindgen]
 pub fn sock_recv(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(data, packets::Direction::Recv) {
+    let mut c = Cursor::new(data);
+    match packets::Packet::read(&mut c, packets::Direction::Recv) {
         Ok(packet) => {
             debug!("RECV: {:?}", packet);
             Vec::from(data)

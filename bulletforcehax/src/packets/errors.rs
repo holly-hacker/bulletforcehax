@@ -9,7 +9,7 @@ pub enum PacketReadError {
     UnknownEventType(u8),
     UnknownOperationType(u8),
     UnknownInternalOperationType(u8),
-    UnimplementedEventType(Event),
+    UnimplementedEventType(Event<'static>),
     UnimplementedOperationType(Operation<'static>),
     UnimplementedInternalOperationType(InternalOperation),
     UnknownProtocolValueType(u8),
@@ -18,6 +18,8 @@ pub enum PacketReadError {
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
     CouldNotFindKey(u8),
+    CouldNotFindKeyProtocolValue(ProtocolValue<'static>),
+    Other(String),
 }
 
 impl From<std::io::Error> for PacketReadError {
