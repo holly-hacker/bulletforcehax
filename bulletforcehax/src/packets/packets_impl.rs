@@ -15,11 +15,14 @@ impl Packet<'_> {
             return Err(PacketReadError::InvalidMagic(magic));
         }
 
-        let packet_type: u8 = c.read_u8()?;
+        fn err<'a>(packet: Packet<'static>) -> PacketReadResult<Packet<'a>> {
+            Err(PacketReadError::UnimplementedPacketType(packet))
+        }
 
+        let packet_type: u8 = c.read_u8()?;
         match packet_type {
-            0 => Ok(Packet::Init),
-            1 => Ok(Packet::InitResponse),
+            0 => err(Packet::Init),
+            1 => err(Packet::InitResponse),
             2 => Ok(Packet::OperationRequest(Operation::read(c, direction)?)),
             3 => {
                 let operation_type = c.read_u8()?;
@@ -39,8 +42,8 @@ impl Packet<'_> {
                     InternalOperation::read_with_type(c, direction, operation_type)?,
                 ))
             }
-            8 => Ok(Packet::Message),
-            9 => Ok(Packet::RawMessage),
+            8 => err(Packet::Message),
+            9 => err(Packet::RawMessage),
             _ => Err(PacketReadError::UnknownPacketType(packet_type)),
         }
     }

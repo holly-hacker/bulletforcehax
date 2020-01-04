@@ -10,6 +10,7 @@ pub enum PacketReadError {
     UnknownEventType(u8),
     UnknownOperationType(u8),
     UnknownInternalOperationType(u8),
+    UnimplementedPacketType(Packet<'static>),
     UnimplementedEventType(Event<'static>),
     UnimplementedOperationType(Operation<'static>),
     UnimplementedInternalOperationType(InternalOperation),
