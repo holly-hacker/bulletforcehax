@@ -1,6 +1,7 @@
 use super::*;
 
 pub type PacketReadResult<T> = Result<T, PacketReadError>;
+pub type PacketWriteResult<T> = Result<T, PacketWriteError>;
 
 #[derive(Debug)]
 pub enum PacketReadError {
@@ -31,5 +32,28 @@ impl From<std::io::Error> for PacketReadError {
 impl From<std::str::Utf8Error> for PacketReadError {
     fn from(error: std::str::Utf8Error) -> Self {
         PacketReadError::EncodingError(error)
+    }
+}
+
+#[derive(Debug)]
+pub enum PacketWriteError {
+    UnimplementedEventType(Event<'static>),
+    UnimplementedOperationType(Operation<'static>),
+    UnimplementedInternalOperationType(InternalOperation),
+    UnimplementedProtocolValueType(ProtocolValue<'static>),
+    IOError(std::io::Error),
+    EncodingError(std::str::Utf8Error),
+    Other(String),
+}
+
+impl From<std::io::Error> for PacketWriteError {
+    fn from(error: std::io::Error) -> Self {
+        PacketWriteError::IOError(error)
+    }
+}
+
+impl From<std::str::Utf8Error> for PacketWriteError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        PacketWriteError::EncodingError(error)
     }
 }
