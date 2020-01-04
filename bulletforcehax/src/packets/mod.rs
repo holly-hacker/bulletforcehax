@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 mod errors;
 pub use errors::{PacketReadError, PacketReadResult};
-mod reading_functions;
+mod packets_impl;
+mod read_write;
 
 #[derive(Debug)]
 pub enum Packet<'a> {
