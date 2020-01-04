@@ -92,7 +92,8 @@ fn read_parameter_table<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<HashMa
 }
 
 impl Packet<'_> {
-    pub fn read<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Packet<'a>> {
+    pub fn read<'a>(data: &'a [u8], direction: Direction) -> PacketReadResult<Packet<'a>> {
+        let ref mut c = Cursor::new(data);
         let magic = c.read_u8()?;
         if magic != 0xF3 {
             return Err(PacketReadError::InvalidMagic(magic));
@@ -130,7 +131,7 @@ impl Packet<'_> {
 }
 
 impl Event<'_> {
-    pub fn read<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Event<'a>> {
+    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Event<'a>> {
         fn err<'a>(event: Event<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
             Err(PacketReadError::UnimplementedEventType(event))
@@ -183,12 +184,12 @@ impl Event<'_> {
 }
 
 impl Operation<'_> {
-    pub fn read<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Operation<'a>> {
+    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Operation<'a>> {
         let operation_type = c.read_u8()?;
 
         Operation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<Operation<'a>> {
+    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<Operation<'a>> {
         fn err<'a>(operation: Operation<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Operation<'a>> {
             debug!("Unimplemented Operation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedOperationType(operation))
@@ -277,12 +278,12 @@ impl Operation<'_> {
 }
 
 impl InternalOperation {
-    pub fn read<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<InternalOperation> {
+    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<InternalOperation> {
         let operation_type = c.read_u8()?;
 
         InternalOperation::read_with_type(c, direction, operation_type)
     }
-    pub fn read_with_type<'a>(c: &'a mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<InternalOperation> {
+    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<InternalOperation> {
         fn err<'a>(operation: InternalOperation, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
             debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedInternalOperationType(operation))
