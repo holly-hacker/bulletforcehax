@@ -132,7 +132,6 @@ mod writing_protocol_types_tests {
     }
 
     #[test]
-    // note: hashmap order is not stable. if this test fails, check if the order changed
     fn can_write_hashtable() -> PacketWriteResult<()> {
         let mut expected_map = HashMap::new();
         expected_map.insert(ProtocolValue::String("abc"), ProtocolValue::Bool(true));
@@ -141,10 +140,19 @@ mod writing_protocol_types_tests {
         let ref mut writer = Vec::new();
         write_value_of_type(writer, ProtocolValue::Hashtable(expected_map))?;
 
-        assert_eq!(
-            writer,
-            &vec![0x68, 0x00, 0x02, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01, 98, 0xFF, 42]
-        );
+        // hashmap order is not stable, so there are 2 distinct possibilities we check for
+        assert_eq!(14, writer.len());
+        match writer[3] {
+            115 => assert_eq!(
+                writer,
+                &vec![0x68, 0x00, 0x02, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01, 98, 0xFF, 42]
+            ),
+            98 => assert_eq!(
+                writer,
+                &vec![0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01]
+            ),
+            _ => assert!(false),
+        }
         Ok(())
     }
 
