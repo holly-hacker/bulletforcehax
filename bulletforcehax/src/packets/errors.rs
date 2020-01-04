@@ -38,13 +38,13 @@ impl From<std::str::Utf8Error> for PacketReadError {
 
 #[derive(Debug)]
 pub enum PacketWriteError {
+    UnimplementedPacketType(Packet<'static>),
     UnimplementedEventType(Event<'static>),
     UnimplementedOperationType(Operation<'static>),
     UnimplementedInternalOperationType(InternalOperation),
     UnimplementedProtocolValueType(ProtocolValue<'static>),
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
-    Other(String),
 }
 
 impl From<std::io::Error> for PacketWriteError {

@@ -86,3 +86,12 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
         ProtocolValue::Custom => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
     }
 }
+
+pub fn write_parameter_table(c: &mut dyn Write, x: HashMap<u8, ProtocolValue>) -> PacketWriteResult<()> {
+    c.write_u16::<BigEndian>(x.len() as u16)?;
+    for (key, value) in x {
+        c.write_u8(key)?;
+        write_value_of_type(c, value)?;
+    }
+    Ok(())
+}

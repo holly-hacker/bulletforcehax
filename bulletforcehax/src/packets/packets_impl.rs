@@ -1,9 +1,10 @@
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use log::{debug, warn};
+use maplit::hashmap;
 use std::collections::HashMap;
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 
-use read_write::{read_parameter_table, read_string};
+use read_write::{read_parameter_table, read_string, write_parameter_table, write_value_of_type};
 
 use super::*;
 
@@ -47,9 +48,67 @@ impl Packet<'_> {
             _ => Err(PacketReadError::UnknownPacketType(packet_type)),
         }
     }
+
+    fn get_type(&self) -> u8 {
+        match self {
+            Packet::Init => 0,
+            Packet::InitResponse => 1,
+            Packet::OperationRequest(_) => 2,
+            Packet::OperationResponse(_, _, _) => 3,
+            Packet::Event(_) => 4,
+            Packet::InternalOperationRequest(_) => 6,
+            Packet::InternalOperationResponse(_, _, _) => 7,
+            Packet::Message => 8,
+            Packet::RawMessage => 9,
+        }
+    }
+
+    pub fn into_vec(self) -> PacketWriteResult<Vec<u8>> {
+        let mut vec = Vec::new();
+        let ref mut writer = vec;
+
+        writer.write_u8(0xF3)?;
+        writer.write_u8(self.get_type())?;
+
+        fn err<'a>(packet: Packet<'static>) -> PacketWriteResult<()> {
+            Err(PacketWriteError::UnimplementedPacketType(packet))
+        }
+
+        match self {
+            Packet::Init => err(Packet::Init),
+            Packet::InitResponse => err(Packet::InitResponse),
+            Packet::OperationRequest(operation) => operation.write(writer),
+            Packet::OperationResponse(return_value, debug_string, operation) => {
+                writer.write_u8(operation.get_type())?;
+                writer.write_i16::<BigEndian>(return_value)?;
+                match debug_string {
+                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
+                    None => write_value_of_type(writer, ProtocolValue::Null())?,
+                }
+                operation.write_without_type(writer)?;
+                Ok(())
+            }
+            Packet::Event(event) => event.write(writer),
+            Packet::InternalOperationRequest(operation) => operation.write(writer),
+            Packet::InternalOperationResponse(return_value, debug_string, operation) => {
+                writer.write_u8(operation.get_type())?;
+                writer.write_i16::<BigEndian>(return_value)?;
+                match debug_string {
+                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
+                    None => write_value_of_type(writer, ProtocolValue::Null())?,
+                }
+                operation.write_without_type(writer)?;
+                Ok(())
+            }
+            Packet::Message => err(Packet::Message),
+            Packet::RawMessage => err(Packet::RawMessage),
+        }?;
+
+        Ok(vec)
+    }
 }
 
-impl Event<'_> {
+impl<'s> Event<'s> {
     pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Event<'a>> {
         fn err<'a>(event: Event<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
@@ -100,9 +159,85 @@ impl Event<'_> {
 
         ret
     }
+
+    pub fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
+        c.write_u8(self.get_type())?;
+        write_parameter_table(c, self.get_param_map()?)?;
+        Ok(())
+    }
+
+    fn get_type(&self) -> u8 {
+        match self {
+            Event::AzureNodeInfo => 210,
+            Event::AuthEvent => 223,
+            Event::LobbyStats => 224,
+            Event::AppStats { .. } => 226,
+            Event::Match => 227,
+            Event::QueueState => 228,
+            Event::GameListUpdate(_) => 229,
+            Event::GameList(_) => 230,
+            Event::CacheSliceChanged => 250,
+            Event::ErrorInfo => 251,
+            Event::SetProperties => 253,
+            Event::PropertiesChanged => 253,
+            Event::Leave => 254,
+            Event::Join => 255,
+        }
+    }
+
+    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+        fn err<'a>(event: Event<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
+            Err(PacketWriteError::UnimplementedEventType(event))
+        }
+
+        match self {
+            Event::AzureNodeInfo => err(Event::AzureNodeInfo),
+            Event::AuthEvent => err(Event::AuthEvent),
+            Event::LobbyStats => err(Event::LobbyStats),
+            Event::AppStats {
+                game_count,
+                peer_count,
+                master_peer_count,
+            } => Ok(hashmap! {
+                ParameterCode::GameCount => ProtocolValue::Integer(game_count),
+                ParameterCode::PeerCount => ProtocolValue::Integer(peer_count),
+                ParameterCode::MasterPeerCount => ProtocolValue::Integer(master_peer_count),
+            }),
+            Event::Match => err(Event::Match),
+            Event::QueueState => err(Event::QueueState),
+            Event::GameListUpdate(info) => Ok(hashmap! {
+                ParameterCode::GameList => ProtocolValue::Hashtable(info
+                    .into_iter()
+                    .map(|(k, v)| {
+                        (
+                            ProtocolValue::String(k),
+                            ProtocolValue::Hashtable(match v {
+                                Some(info) => info.into_hashtable(),
+                                None => hashmap! {
+                                    ProtocolValue::Byte(251) => ProtocolValue::Bool(true),
+                                },
+                            }),
+                        )
+                    })
+                    .collect())
+            }),
+            Event::GameList(info) => Ok(hashmap! {
+                ParameterCode::GameList => ProtocolValue::Hashtable(info
+                    .into_iter()
+                    .map(|info| (ProtocolValue::String(info.room_name), ProtocolValue::Hashtable(info.into_hashtable())))
+                    .collect())
+            }),
+            Event::CacheSliceChanged => err(Event::CacheSliceChanged),
+            Event::ErrorInfo => err(Event::ErrorInfo),
+            Event::SetProperties => err(Event::SetProperties),
+            Event::PropertiesChanged => err(Event::PropertiesChanged),
+            Event::Leave => err(Event::Leave),
+            Event::Join => err(Event::Join),
+        }
+    }
 }
 
-impl Operation<'_> {
+impl<'s> Operation<'s> {
     pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Operation<'a>> {
         let operation_type = c.read_u8()?;
 
@@ -194,9 +329,139 @@ impl Operation<'_> {
 
         ret
     }
+
+    fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
+        c.write_u8(self.get_type())?;
+        self.write_without_type(c)
+    }
+
+    pub fn write_without_type(self, c: &mut dyn Write) -> PacketWriteResult<()> {
+        write_parameter_table(c, self.get_param_map()?)?;
+        Ok(())
+    }
+
+    pub fn get_type(&self) -> u8 {
+        match self {
+            Operation::GetGameList => 217,
+            Operation::ServerSettings => 218,
+            Operation::WebRpc => 219,
+            Operation::GetRegions => 220,
+            Operation::GetLobbyStats => 221,
+            Operation::FindFriends => 222,
+            Operation::CancelJoinRandom => 224,
+            Operation::JoinRandomGame => 225,
+            Operation::JoinGame => 226,
+            Operation::CreateGameRequest { .. } => 227,
+            Operation::CreateGameResponse { .. } => 227,
+            Operation::CreateGameRequest2 { .. } => 227,
+            Operation::CreateGameResponse2 { .. } => 227,
+            Operation::LeaveLobby => 228,
+            Operation::JoinLobby() => 229,
+            Operation::AuthenticateRequest { .. } => 230,
+            Operation::AuthenticateResponse { .. } => 230,
+            Operation::AuthenticateRequest2 { .. } => 230,
+            Operation::AuthenticateResponse2 { .. } => 230,
+            Operation::AuthenticateOnce => 231,
+            Operation::ChangeGroups => 248,
+            Operation::ExchangeKeysForEncryption => 250,
+            Operation::GetProperties => 251,
+            Operation::SetProperties => 252,
+            Operation::RaiseEvent => 253,
+            Operation::Leave => 254,
+            Operation::Join => 255,
+        }
+    }
+
+    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+        fn err<'a>(operation: Operation<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
+            Err(PacketWriteError::UnimplementedOperationType(operation))
+        }
+
+        match self {
+            Operation::GetGameList => err(Operation::GetGameList),
+            Operation::ServerSettings => err(Operation::ServerSettings),
+            Operation::WebRpc => err(Operation::WebRpc),
+            Operation::GetRegions => err(Operation::GetRegions),
+            Operation::GetLobbyStats => err(Operation::GetLobbyStats),
+            Operation::FindFriends => err(Operation::FindFriends),
+            Operation::CancelJoinRandom => err(Operation::CancelJoinRandom),
+            Operation::JoinRandomGame => err(Operation::JoinRandomGame),
+            Operation::JoinGame => err(Operation::JoinGame),
+            Operation::CreateGameRequest { room_name } => Ok(hashmap! {
+                ParameterCode::RoomName => ProtocolValue::String(room_name),
+            }),
+            Operation::CreateGameResponse { room_name, address, secret } => Ok(hashmap! {
+                ParameterCode::RoomName => ProtocolValue::String(room_name),
+                ParameterCode::Address => ProtocolValue::String(address),
+                ParameterCode::Secret => ProtocolValue::String(secret),
+            }),
+            Operation::CreateGameRequest2 {
+                broadcast,
+                room_name,
+                game_properties,
+                player_properties,
+                room_option_flags,
+                cleanup_cache_on_leave,
+                check_user_on_join,
+            } => Ok(hashmap! {
+                ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
+                ParameterCode::RoomName => ProtocolValue::String(room_name),
+                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into_hashtable()),
+                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into_hashtable()),
+                ParameterCode::RoomOptionFlags => ProtocolValue::Integer(room_option_flags),
+                ParameterCode::CleanupCacheOnLeave => ProtocolValue::Bool(cleanup_cache_on_leave),
+                ParameterCode::CheckUserOnJoin => ProtocolValue::Bool(check_user_on_join),
+            }),
+            Operation::CreateGameResponse2 {
+                actor_list,
+                actor_nr,
+                game_properties,
+            } => Ok(hashmap! {
+                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
+                ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
+                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into_hashtable()),
+            }),
+            Operation::LeaveLobby => err(Operation::LeaveLobby),
+            Operation::JoinLobby() => Ok(hashmap!()),
+            Operation::AuthenticateRequest {
+                region,
+                application_id,
+                app_version,
+            } => Ok(hashmap! {
+                ParameterCode::Region => ProtocolValue::String(region),
+                ParameterCode::ApplicationId => ProtocolValue::String(application_id),
+                ParameterCode::AppVersion => ProtocolValue::String(app_version),
+            }),
+            Operation::AuthenticateResponse {
+                unknown,
+                secret,
+                address,
+                user_id,
+            } => Ok(hashmap! {
+                196 => ProtocolValue::String(unknown),
+                ParameterCode::Secret => ProtocolValue::String(secret),
+                ParameterCode::Address => ProtocolValue::String(address),
+                ParameterCode::UserId => ProtocolValue::String(user_id),
+
+            }),
+            Operation::AuthenticateRequest2 { secret } => Ok(hashmap!(ParameterCode::Secret => ProtocolValue::String(secret))),
+            Operation::AuthenticateResponse2 { secret, position } => Ok(hashmap! {
+                ParameterCode::Secret => ProtocolValue::String(secret),
+                ParameterCode::Position => ProtocolValue::Integer(position),
+            }),
+            Operation::AuthenticateOnce => err(Operation::AuthenticateOnce),
+            Operation::ChangeGroups => err(Operation::ChangeGroups),
+            Operation::ExchangeKeysForEncryption => err(Operation::ExchangeKeysForEncryption),
+            Operation::GetProperties => err(Operation::GetProperties),
+            Operation::SetProperties => err(Operation::SetProperties),
+            Operation::RaiseEvent => err(Operation::RaiseEvent),
+            Operation::Leave => err(Operation::Leave),
+            Operation::Join => err(Operation::Join),
+        }
+    }
 }
 
-impl InternalOperation {
+impl<'s> InternalOperation {
     pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<InternalOperation> {
         let operation_type = c.read_u8()?;
 
@@ -229,6 +494,39 @@ impl InternalOperation {
         }
 
         ret
+    }
+
+    pub fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
+        c.write_u8(self.get_type())?;
+        self.write_without_type(c)
+    }
+
+    pub fn write_without_type(self, c: &mut dyn Write) -> PacketWriteResult<()> {
+        write_parameter_table(c, self.get_param_map()?)?;
+        Ok(())
+    }
+
+    pub fn get_type(&self) -> u8 {
+        match self {
+            InternalOperation::InitEncryption => 0,
+            InternalOperation::PingRequest { .. } => 1,
+            InternalOperation::PingResponse { .. } => 1,
+        }
+    }
+
+    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+        fn err<'a>(operation: InternalOperation) -> PacketWriteResult<HashMap<u8, ProtocolValue<'a>>> {
+            Err(PacketWriteError::UnimplementedInternalOperationType(operation))
+        }
+
+        match self {
+            InternalOperation::InitEncryption => err(InternalOperation::InitEncryption),
+            InternalOperation::PingRequest { local_time } => Ok(hashmap!(1 => ProtocolValue::Integer(local_time))),
+            InternalOperation::PingResponse { local_time, server_time } => Ok(hashmap! {
+                1 => ProtocolValue::Integer(local_time),
+                2 => ProtocolValue::Integer(server_time),
+            }),
+        }
     }
 }
 

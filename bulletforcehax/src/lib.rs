@@ -32,8 +32,14 @@ pub fn sock_send(data: &[u8]) -> Vec<u8> {
     match packets::Packet::read(&data, packets::Direction::Send) {
         Ok(packet) => {
             debug!("SEND: {:?}", packet);
-            Vec::from(data)
-        } // TODO: return new packet
+            match packet.into_vec() {
+                Ok(vec) => vec,
+                Err(error) => {
+                    error!("SEND ERR: {:?}, data: {:?}", error, data);
+                    Vec::from(data)
+                }
+            }
+        }
         Err(error) => {
             error!("SEND ERR: {:?}, data: {:?}", error, data);
             Vec::from(data)
@@ -46,8 +52,14 @@ pub fn sock_recv(data: &[u8]) -> Vec<u8> {
     match packets::Packet::read(&data, packets::Direction::Recv) {
         Ok(packet) => {
             debug!("RECV: {:?}", packet);
-            Vec::from(data)
-        } // TODO: return new packet
+            match packet.into_vec() {
+                Ok(vec) => vec,
+                Err(error) => {
+                    error!("RECV ERR: {:?}, data: {:?}", error, data);
+                    Vec::from(data)
+                }
+            }
+        }
         Err(error) => {
             error!("RECV ERR: {:?}, data: {:?}", error, data);
             Vec::from(data)
