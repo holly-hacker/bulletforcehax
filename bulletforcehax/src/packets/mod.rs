@@ -3,6 +3,7 @@ use std::hash::{Hash, Hasher};
 mod errors;
 pub use errors::*;
 mod packets_impl;
+mod packets_payload_tests;
 mod read_write;
 
 #[derive(Debug)]
@@ -139,7 +140,7 @@ pub enum Direction {
     Recv,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct GameInfo<'a> {
     game_id: &'a str,
     room_id: &'a str,
@@ -164,7 +165,7 @@ pub struct GameInfo<'a> {
     byte_255: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct GameProperties<'a> {
     spectate_for_mods_only: bool,
     max_ping: u16,
@@ -175,7 +176,7 @@ pub struct GameProperties<'a> {
     score_limit: u32,
     gun_game_preset: u32,
     byte_249: bool,
-    /// List of some fields that are present in this struct
+    /// List of some fields that are present in this struct, which don't seem to be present in GameInfo
     byte_250: Vec<&'a str>,
     byte_253: bool,
     byte_254: bool,
@@ -203,7 +204,7 @@ pub struct GameProperties<'a> {
     store_id: &'a str,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PlayerProperties<'a> {
     NameOnly(&'a str),
     // TODO: extend this when there's more info

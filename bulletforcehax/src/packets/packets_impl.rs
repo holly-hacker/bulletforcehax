@@ -229,7 +229,7 @@ impl InternalOperation {
     }
 }
 
-impl GameInfo<'_> {
+impl<'s> GameInfo<'s> {
     pub fn new_from_hashtable_table<'a>(
         big_table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
     ) -> PacketReadResult<HashMap<&'a str, Option<GameInfo<'a>>>> {
@@ -287,9 +287,39 @@ impl GameInfo<'_> {
 
         ret
     }
+    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+        let mut map = HashMap::new();
+        map.insert(ProtocolValue::String("gameID"), ProtocolValue::String(self.game_id));
+        map.insert(ProtocolValue::String("roomID"), ProtocolValue::String(self.room_id));
+        map.insert(ProtocolValue::String("storeID"), ProtocolValue::String(self.store_id));
+        map.insert(ProtocolValue::String("roomName"), ProtocolValue::String(self.room_name));
+        map.insert(ProtocolValue::String("modeName"), ProtocolValue::String(self.mode_name));
+        map.insert(ProtocolValue::String("password"), ProtocolValue::String(self.password));
+        map.insert(ProtocolValue::String("mapName"), ProtocolValue::String(self.map_name));
+        map.insert(ProtocolValue::String("matchStarted"), ProtocolValue::Bool(self.match_started));
+        map.insert(ProtocolValue::String("switchingmap"), ProtocolValue::Bool(self.switching_map));
+        map.insert(ProtocolValue::String("roomType"), ProtocolValue::Byte(self.room_type));
+        map.insert(ProtocolValue::String("dedicated"), ProtocolValue::Bool(self.dedicated));
+        map.insert(ProtocolValue::String("hardcore"), ProtocolValue::Bool(self.hardcore));
+        map.insert(
+            ProtocolValue::String("allowedweapons"),
+            ProtocolValue::Array(vec![
+                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as u32),
+                ProtocolValue::Integer((self.allowed_weapons >> 32) as u32),
+            ]),
+        );
+        map.insert(ProtocolValue::String("meanRank"), ProtocolValue::Float(self.mean_rank));
+        map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
+        map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
+        map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
+        map.insert(ProtocolValue::Byte(252), ProtocolValue::Byte(self.byte_252));
+        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.byte_253));
+        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.byte_255));
+        map
+    }
 }
 
-impl GameProperties<'_> {
+impl<'s> GameProperties<'s> {
     pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<GameProperties<'a>> {
         let ret = Ok(GameProperties {
             spectate_for_mods_only: get_u8_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
@@ -343,9 +373,65 @@ impl GameProperties<'_> {
 
         ret
     }
+
+    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+        let mut map = HashMap::new();
+        map.insert(
+            ProtocolValue::String("spectateForModsOnly"),
+            ProtocolValue::Bool(self.spectate_for_mods_only),
+        );
+        map.insert(ProtocolValue::String("maxPing"), ProtocolValue::Short(self.max_ping));
+        map.insert(
+            ProtocolValue::String("bannedweaponmessage"),
+            ProtocolValue::String(self.banned_weapon_message),
+        );
+        map.insert(ProtocolValue::String("timeScale"), ProtocolValue::Float(self.time_scale));
+        map.insert(
+            ProtocolValue::String("matchCountdownTime"),
+            ProtocolValue::Float(self.match_countdown_time),
+        );
+        map.insert(ProtocolValue::String("roundStarted"), ProtocolValue::Bool(self.round_started));
+        map.insert(ProtocolValue::String("scorelimit"), ProtocolValue::Integer(self.score_limit));
+        map.insert(ProtocolValue::String("gunGamePreset"), ProtocolValue::Integer(self.gun_game_preset));
+        map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(self.byte_249));
+        map.insert(
+            ProtocolValue::Byte(250),
+            ProtocolValue::Array(self.byte_250.into_iter().map(|s| ProtocolValue::String(s)).collect()),
+        );
+        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.byte_253));
+        map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(self.byte_254));
+        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.byte_255));
+        if let Some(b) = self.byte_248 {
+            map.insert(ProtocolValue::Byte(248), ProtocolValue::Integer(b));
+        }
+        map.insert(ProtocolValue::String("roomName"), ProtocolValue::String(self.room_name));
+        map.insert(ProtocolValue::String("mapName"), ProtocolValue::String(self.map_name));
+        map.insert(ProtocolValue::String("modeName"), ProtocolValue::String(self.mode_name));
+        map.insert(ProtocolValue::String("password"), ProtocolValue::String(self.password));
+        map.insert(ProtocolValue::String("hardcore"), ProtocolValue::Bool(self.hardcore));
+        map.insert(ProtocolValue::String("dedicated"), ProtocolValue::Bool(self.dedicated));
+        map.insert(ProtocolValue::String("matchStarted"), ProtocolValue::Bool(self.match_started));
+        map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
+        map.insert(ProtocolValue::String("meanRank"), ProtocolValue::Integer(self.mean_rank));
+        map.insert(ProtocolValue::String("roomType"), ProtocolValue::Byte(self.room_type));
+        map.insert(ProtocolValue::String("switchingmap"), ProtocolValue::Bool(self.switching_map));
+        map.insert(
+            ProtocolValue::String("allowedweapons"),
+            ProtocolValue::Array(vec![
+                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as u32),
+                ProtocolValue::Integer((self.allowed_weapons >> 32) as u32),
+            ]),
+        );
+        map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
+        map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
+        map.insert(ProtocolValue::String("gameID"), ProtocolValue::String(self.game_id));
+        map.insert(ProtocolValue::String("roomID"), ProtocolValue::String(self.room_id));
+        map.insert(ProtocolValue::String("storeID"), ProtocolValue::String(self.store_id));
+        map
+    }
 }
 
-impl PlayerProperties<'_> {
+impl<'s> PlayerProperties<'s> {
     pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<PlayerProperties<'a>> {
         if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
             return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
@@ -358,6 +444,14 @@ impl PlayerProperties<'_> {
         }
 
         ret
+    }
+
+    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+        let mut map = HashMap::new();
+        match self {
+            PlayerProperties::NameOnly(name) => map.insert(ProtocolValue::Byte(255), ProtocolValue::String(name)),
+        };
+        map
     }
 }
 
