@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod packets_payload_tests {
     use super::super::*;
+    use std::convert::TryFrom;
 
     #[test]
     fn test_game_info() {
@@ -32,7 +33,7 @@ mod packets_payload_tests {
         let info = gen();
         let info_clone = gen();
 
-        let ht = info.into_hashtable();
+        let ht = info.into();
         let info_new = GameInfo::new_from_hashtable(ht).unwrap().unwrap();
         assert_eq!(info_clone, info_new);
     }
@@ -79,8 +80,8 @@ mod packets_payload_tests {
         let info = gen();
         let info_clone = gen();
 
-        let ht = info.into_hashtable();
-        let info_new = GameProperties::new_from_hashtable(ht).unwrap();
+        let ht: HashMap<ProtocolValue, ProtocolValue> = info.into();
+        let info_new = GameProperties::try_from(ht).unwrap();
         assert_eq!(info_clone, info_new);
     }
 
@@ -93,8 +94,8 @@ mod packets_payload_tests {
         let info = gen();
         let info_clone = gen();
 
-        let ht = info.into_hashtable();
-        let info_new = PlayerProperties::new_from_hashtable(ht).unwrap();
+        let ht: HashMap<ProtocolValue, ProtocolValue> = info.into();
+        let info_new = PlayerProperties::try_from(ht).unwrap();
         assert_eq!(info_clone, info_new);
     }
 }

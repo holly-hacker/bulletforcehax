@@ -5,6 +5,7 @@ use log::{debug, warn};
 use maplit::hashmap;
 use read_write::{read_parameter_table, read_string, write_parameter_table, write_value_of_type};
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::io::{Cursor, Write};
 
 impl Packet<'_> {
@@ -156,7 +157,7 @@ impl<'s> Event<'s> {
                         .collect()
                 })?,
                 actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
-                player_properties: PlayerProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+                player_properties: PlayerProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
             }),
             _ => Err(PacketReadError::UnknownEventType(event_type)),
         };
@@ -220,7 +221,7 @@ impl<'s> Event<'s> {
                         (
                             ProtocolValue::String(k),
                             ProtocolValue::Hashtable(match v {
-                                Some(info) => info.into_hashtable(),
+                                Some(info) => info.into(),
                                 None => hashmap! {
                                     ProtocolValue::Byte(251) => ProtocolValue::Bool(true),
                                 },
@@ -232,7 +233,7 @@ impl<'s> Event<'s> {
             Event::GameList(info) => Ok(hashmap! {
                 ParameterCode::GameList => ProtocolValue::Hashtable(info
                     .into_iter()
-                    .map(|info| (ProtocolValue::String(info.room_name), ProtocolValue::Hashtable(info.into_hashtable())))
+                    .map(|info| (ProtocolValue::String(info.room_name), ProtocolValue::Hashtable(info.into())))
                     .collect())
             }),
             Event::CacheSliceChanged => err(Event::CacheSliceChanged),
@@ -247,7 +248,7 @@ impl<'s> Event<'s> {
             } => Ok(hashmap! {
                 ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
                 ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
-                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into_hashtable()),
+                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into()),
             }),
         }
     }
@@ -284,8 +285,8 @@ impl<'s> Operation<'s> {
                 Direction::Send => Ok(Operation::CreateGameRequest2 {
                     broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
                     room_name: get_protocol_string(&mut params, ParameterCode::RoomName)?,
-                    game_properties: GameProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
-                    player_properties: PlayerProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+                    game_properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                    player_properties: PlayerProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
                     room_option_flags: get_protocol_int(&mut params, ParameterCode::RoomOptionFlags)?,
                     cleanup_cache_on_leave: get_protocol_bool(&mut params, ParameterCode::CleanupCacheOnLeave)?,
                     check_user_on_join: get_protocol_bool(&mut params, ParameterCode::CheckUserOnJoin)?,
@@ -303,7 +304,7 @@ impl<'s> Operation<'s> {
                             .collect()
                     })?,
                     actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
-                    game_properties: GameProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                    game_properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
                 }),
             },
             228 => err(Operation::LeaveLobby, &params),
@@ -349,7 +350,7 @@ impl<'s> Operation<'s> {
             {
                 Ok(Operation::SetPropertiesGame {
                     broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
-                    properties: GameProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::Properties)?)?,
+                    properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::Properties)?)?,
                 })
             }
             252 => Ok(Operation::SetPropertiesUnknown {
@@ -448,8 +449,8 @@ impl<'s> Operation<'s> {
             } => Ok(hashmap! {
                 ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
                 ParameterCode::RoomName => ProtocolValue::String(room_name),
-                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into_hashtable()),
-                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into_hashtable()),
+                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into()),
+                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into()),
                 ParameterCode::RoomOptionFlags => ProtocolValue::Integer(room_option_flags),
                 ParameterCode::CleanupCacheOnLeave => ProtocolValue::Bool(cleanup_cache_on_leave),
                 ParameterCode::CheckUserOnJoin => ProtocolValue::Bool(check_user_on_join),
@@ -461,7 +462,7 @@ impl<'s> Operation<'s> {
             } => Ok(hashmap! {
                 ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
                 ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
-                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into_hashtable()),
+                ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into()),
             }),
             Operation::LeaveLobby => err(Operation::LeaveLobby),
             Operation::JoinLobby() => Ok(hashmap!()),
@@ -497,7 +498,7 @@ impl<'s> Operation<'s> {
             Operation::GetProperties => err(Operation::GetProperties),
             Operation::SetPropertiesGame { broadcast, properties } => Ok(hashmap! {
                 ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
-                ParameterCode::Properties => ProtocolValue::Hashtable(GameProperties::into_hashtable(properties)),
+                ParameterCode::Properties => ProtocolValue::Hashtable(GameProperties::into(properties)),
             }),
             Operation::SetPropertiesActor {
                 broadcast,

@@ -2,6 +2,7 @@ use super::macros::*;
 use super::*;
 use log::warn;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 
 impl<'s> GameInfo<'s> {
     pub fn new_from_hashtable_table<'a>(
@@ -17,13 +18,22 @@ impl<'s> GameInfo<'s> {
 
         Ok(map)
     }
-    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<Option<GameInfo<'a>>> {
+
+    pub fn new_from_hashtable(table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Option<GameInfo<'s>>> {
         if table.contains_key(&ProtocolValue::Byte(251)) {
             // got removed
             return Ok(None);
         }
 
-        let ret = Ok(Some(GameInfo {
+        Some(GameInfo::try_from(table)).transpose()
+    }
+}
+
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
+    type Error = PacketReadError;
+
+    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameInfo<'s>> {
+        let ret = Ok(GameInfo {
             game_id: get_u8_string(&mut table, ProtocolValue::String("gameID"))?,
             room_id: get_u8_string(&mut table, ProtocolValue::String("roomID"))?,
             store_id: get_u8_string(&mut table, ProtocolValue::String("storeID"))?,
@@ -53,7 +63,7 @@ impl<'s> GameInfo<'s> {
             byte_252: get_u8_byte(&mut table, ProtocolValue::Byte(252))?,
             byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253))?,
             byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255))?,
-        }));
+        });
 
         if ret.is_ok() && table.len() > 0 {
             warn!("Missed GameInfo parameters: {:#?}, obj is {:#?}", table, ret);
@@ -61,7 +71,10 @@ impl<'s> GameInfo<'s> {
 
         ret
     }
-    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+}
+
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
+    fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
         let mut map = HashMap::new();
         map.insert(ProtocolValue::String("gameID"), ProtocolValue::String(self.game_id));
         map.insert(ProtocolValue::String("roomID"), ProtocolValue::String(self.room_id));
@@ -93,8 +106,10 @@ impl<'s> GameInfo<'s> {
     }
 }
 
-impl<'s> GameProperties<'s> {
-    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<GameProperties<'a>> {
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<'s> {
+    type Error = PacketReadError;
+
+    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameProperties<'s>> {
         let ret = Ok(GameProperties {
             spectate_for_mods_only: get_u8_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
             max_ping: get_u8_short(&mut table, ProtocolValue::String("maxPing"))?,
@@ -150,8 +165,10 @@ impl<'s> GameProperties<'s> {
 
         ret
     }
+}
 
-    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<'s> {
+    fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
         let mut map = HashMap::new();
         map.insert(
             ProtocolValue::String("spectateForModsOnly"),
@@ -209,8 +226,10 @@ impl<'s> GameProperties<'s> {
     }
 }
 
-impl<'s> PlayerProperties<'s> {
-    pub fn new_from_hashtable<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<PlayerProperties<'a>> {
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProperties<'s> {
+    type Error = PacketReadError;
+
+    fn try_from<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<PlayerProperties<'a>> {
         if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
             return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
         }
@@ -223,8 +242,10 @@ impl<'s> PlayerProperties<'s> {
 
         ret
     }
+}
 
-    pub fn into_hashtable(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProperties<'s> {
+    fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
         let mut map = HashMap::new();
         match self {
             PlayerProperties::NameOnly(name) => map.insert(ProtocolValue::Byte(255), ProtocolValue::String(name)),
