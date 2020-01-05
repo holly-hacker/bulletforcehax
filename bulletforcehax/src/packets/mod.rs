@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 mod errors;
 pub use errors::*;
+mod macros;
 mod packets_impl;
-mod packets_payload_tests;
+mod payloads_impl;
+mod payloads_tests;
 mod read_write;
 
 #[derive(Debug)]
