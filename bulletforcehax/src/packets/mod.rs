@@ -38,7 +38,11 @@ pub enum Event<'a> {
     PropertiesChanged,
     SetProperties,
     Leave,
-    Join,
+    Join {
+        actor_nr: u32,
+        player_properties: PlayerProperties<'a>,
+        actor_list: Vec<u32>,
+    },
 }
 
 #[derive(Debug)]
@@ -98,7 +102,21 @@ pub enum Operation<'a> {
     ChangeGroups,
     ExchangeKeysForEncryption,
     GetProperties,
-    SetProperties,
+    SetPropertiesGame {
+        broadcast: bool,
+        properties: GameProperties<'a>,
+    },
+    SetPropertiesActor {
+        broadcast: bool,
+        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, // updates select properties of an actor.
+        actor_nr: u32,
+    },
+    SetPropertiesEmpty(),
+    /// when props only contains `byte_254: bool`
+    SetPropertiesUnknown {
+        broadcast: bool,
+        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+    },
     RaiseEvent,
     Leave,
     Join,
@@ -175,13 +193,15 @@ pub struct GameProperties<'a> {
     round_started: bool,
     score_limit: u32,
     gun_game_preset: u32,
-    byte_249: bool,
+
+    // byte_* options below not present in Operation::SetProperties
+    byte_249: Option<bool>,
     /// List of some fields that are present in this struct, which don't seem to be present in GameInfo
-    byte_250: Vec<&'a str>,
-    byte_253: bool,
-    byte_254: bool,
-    byte_255: u8,
-    /// Only present in response
+    byte_250: Option<Vec<&'a str>>,
+    byte_253: Option<bool>,
+    byte_254: Option<bool>,
+    byte_255: Option<u8>,
+    /// Only present in Operation::CreateGame* response
     byte_248: Option<u32>,
 
     // fields contained in byte_250

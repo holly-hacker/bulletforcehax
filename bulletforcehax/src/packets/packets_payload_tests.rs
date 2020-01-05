@@ -58,8 +58,8 @@ mod packets_payload_tests {
                 mean_kd: 2.,
                 average_rank: 1337,
                 event_code: 0,
-                byte_253: false,
-                byte_255: 2,
+                byte_253: Some(false),
+                byte_255: Some(2),
 
                 spectate_for_mods_only: false,
                 max_ping: 123,
@@ -69,9 +69,9 @@ mod packets_payload_tests {
                 round_started: false,
                 score_limit: 123,
                 gun_game_preset: 2,
-                byte_249: false,
-                byte_250: vec!["1", "2", "", "asd"],
-                byte_254: true,
+                byte_249: Some(false),
+                byte_250: Some(vec!["1", "2", "", "asd"]),
+                byte_254: Some(true),
                 byte_248: None,
             }
         }

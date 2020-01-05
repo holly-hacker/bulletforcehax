@@ -149,7 +149,16 @@ impl<'s> Event<'s> {
                 Direction::Recv => err(Event::PropertiesChanged, &params),
             },
             254 => err(Event::Leave, &params),
-            255 => err(Event::Join, &params),
+            255 => Ok(Event::Join {
+                actor_list: get_protocol_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
+                    protocol_array
+                        .into_iter()
+                        .map(|protocol_value| unwrap_protocol_int(protocol_value).expect("CreateGame response 2 had a non-int actor id"))
+                        .collect()
+                })?,
+                actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
+                player_properties: PlayerProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+            }),
             _ => Err(PacketReadError::UnknownEventType(event_type)),
         };
 
@@ -181,7 +190,7 @@ impl<'s> Event<'s> {
             Event::SetProperties => 253,
             Event::PropertiesChanged => 253,
             Event::Leave => 254,
-            Event::Join => 255,
+            Event::Join { .. } => 255,
         }
     }
 
@@ -232,7 +241,15 @@ impl<'s> Event<'s> {
             Event::SetProperties => err(Event::SetProperties),
             Event::PropertiesChanged => err(Event::PropertiesChanged),
             Event::Leave => err(Event::Leave),
-            Event::Join => err(Event::Join),
+            Event::Join {
+                actor_list,
+                actor_nr,
+                player_properties,
+            } => Ok(hashmap! {
+                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
+                ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
+                ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into_hashtable()),
+            }),
         }
     }
 }
@@ -316,7 +333,30 @@ impl<'s> Operation<'s> {
             248 => err(Operation::ChangeGroups, &params),
             250 => err(Operation::ExchangeKeysForEncryption, &params),
             251 => err(Operation::GetProperties, &params),
-            252 => err(Operation::SetProperties, &params),
+            252 if params.len() == 0 => Ok(Operation::SetPropertiesEmpty()),
+            252 if params.contains_key(&ParameterCode::ActorNr) => Ok(Operation::SetPropertiesActor {
+                broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
+                actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
+                properties: get_protocol_hashtable(&mut params, ParameterCode::Properties)?,
+            }),
+            252 if params // TODO: super ugly!
+                .get(&ParameterCode::Properties)
+                .and_then(|p| match p {
+                    ProtocolValue::Hashtable(t) => Some(t),
+                    _ => None,
+                })
+                .and_then(|p| p.get(&ProtocolValue::String("roomName")))
+                .is_some() =>
+            {
+                Ok(Operation::SetPropertiesGame {
+                    broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
+                    properties: GameProperties::new_from_hashtable(get_protocol_hashtable(&mut params, ParameterCode::Properties)?)?,
+                })
+            }
+            252 => Ok(Operation::SetPropertiesUnknown {
+                broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
+                properties: get_protocol_hashtable(&mut params, ParameterCode::Properties)?,
+            }),
             253 => err(Operation::RaiseEvent, &params),
             254 => err(Operation::Leave, &params),
             255 => err(Operation::Join, &params),
@@ -365,7 +405,10 @@ impl<'s> Operation<'s> {
             Operation::ChangeGroups => 248,
             Operation::ExchangeKeysForEncryption => 250,
             Operation::GetProperties => 251,
-            Operation::SetProperties => 252,
+            Operation::SetPropertiesGame { .. } => 252,
+            Operation::SetPropertiesActor { .. } => 252,
+            Operation::SetPropertiesEmpty() => 252,
+            Operation::SetPropertiesUnknown { .. } => 252,
             Operation::RaiseEvent => 253,
             Operation::Leave => 254,
             Operation::Join => 255,
@@ -453,7 +496,24 @@ impl<'s> Operation<'s> {
             Operation::ChangeGroups => err(Operation::ChangeGroups),
             Operation::ExchangeKeysForEncryption => err(Operation::ExchangeKeysForEncryption),
             Operation::GetProperties => err(Operation::GetProperties),
-            Operation::SetProperties => err(Operation::SetProperties),
+            Operation::SetPropertiesGame { broadcast, properties } => Ok(hashmap! {
+                ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
+                ParameterCode::Properties => ProtocolValue::Hashtable(GameProperties::into_hashtable(properties)),
+            }),
+            Operation::SetPropertiesActor {
+                broadcast,
+                properties,
+                actor_nr,
+            } => Ok(hashmap! {
+                ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
+                ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
+                ParameterCode::Properties => ProtocolValue::Hashtable(properties),
+            }),
+            Operation::SetPropertiesEmpty() => Ok(hashmap!()),
+            Operation::SetPropertiesUnknown { broadcast, properties } => Ok(hashmap! {
+                ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
+                ParameterCode::Properties => ProtocolValue::Hashtable(properties),
+            }),
             Operation::RaiseEvent => err(Operation::RaiseEvent),
             Operation::Leave => err(Operation::Leave),
             Operation::Join => err(Operation::Join),
@@ -631,14 +691,17 @@ impl<'s> GameProperties<'s> {
             round_started: get_u8_bool(&mut table, ProtocolValue::String("roundStarted"))?,
             score_limit: get_u8_int(&mut table, ProtocolValue::String("scorelimit"))?,
             gun_game_preset: get_u8_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
-            byte_249: get_u8_bool(&mut table, ProtocolValue::Byte(249))?,
-            byte_250: get_u8_array(&mut table, ProtocolValue::Byte(250))?
-                .into_iter()
-                .map(|protocol_val| unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::byte_250"))
-                .collect(),
-            byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253))?,
-            byte_254: get_u8_bool(&mut table, ProtocolValue::Byte(254))?,
-            byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255))?,
+            byte_249: get_u8_bool(&mut table, ProtocolValue::Byte(249)).ok(),
+            byte_250: get_u8_array(&mut table, ProtocolValue::Byte(250))
+                .and_then(|x| {
+                    Ok(x.into_iter()
+                        .map(|protocol_val| unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::byte_250"))
+                        .collect())
+                })
+                .ok(),
+            byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253)).ok(),
+            byte_254: get_u8_bool(&mut table, ProtocolValue::Byte(254)).ok(),
+            byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255)).ok(),
             byte_248: get_u8_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
             room_name: get_u8_string(&mut table, ProtocolValue::String("roomName"))?,
             map_name: get_u8_string(&mut table, ProtocolValue::String("mapName"))?,
@@ -694,14 +757,24 @@ impl<'s> GameProperties<'s> {
         map.insert(ProtocolValue::String("roundStarted"), ProtocolValue::Bool(self.round_started));
         map.insert(ProtocolValue::String("scorelimit"), ProtocolValue::Integer(self.score_limit));
         map.insert(ProtocolValue::String("gunGamePreset"), ProtocolValue::Integer(self.gun_game_preset));
-        map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(self.byte_249));
-        map.insert(
-            ProtocolValue::Byte(250),
-            ProtocolValue::Array(self.byte_250.into_iter().map(|s| ProtocolValue::String(s)).collect()),
-        );
-        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.byte_253));
-        map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(self.byte_254));
-        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.byte_255));
+        if let Some(b) = self.byte_249 {
+            map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(b));
+        }
+        if let Some(b) = self.byte_250 {
+            map.insert(
+                ProtocolValue::Byte(250),
+                ProtocolValue::Array(b.into_iter().map(|s| ProtocolValue::String(s)).collect()),
+            );
+        }
+        if let Some(b) = self.byte_253 {
+            map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(b));
+        }
+        if let Some(b) = self.byte_254 {
+            map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(b));
+        }
+        if let Some(b) = self.byte_255 {
+            map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(b));
+        }
         if let Some(b) = self.byte_248 {
             map.insert(ProtocolValue::Byte(248), ProtocolValue::Integer(b));
         }
