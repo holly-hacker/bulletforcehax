@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1.6"
-log = "0.4"
+log = { version = "0.4", features = ["max_level_trace", "release_max_level_info"] }
 console_log = "0.1.2"
 byteorder = "1.3"
 maplit = "1"

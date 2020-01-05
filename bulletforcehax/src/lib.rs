@@ -18,7 +18,7 @@ pub fn main() -> Result<(), JsValue> {
 
     // allow logging to console
     // could turn off logging in release builds for perf+size improvement, see https://crates.io/crates/console_log or https://docs.rs/log/0.4.10/log/#compile-time-filters
-    console_log::init_with_level(Level::Debug).unwrap();
+    console_log::init_with_level(Level::Trace).unwrap();
 
     info!("BulletForceHax initialized, starting game.");
     startGame();
