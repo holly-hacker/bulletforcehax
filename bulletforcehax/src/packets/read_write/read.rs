@@ -52,7 +52,6 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Pa
     }
 }
 
-// TODO: look into returning a slice here and in read_value_array
 pub fn read_value_array_of_same_type<'a>(c: &mut Cursor<&'a [u8]>) -> PacketReadResult<Vec<ProtocolValue<'a>>> {
     let len = c.read_u16::<BigEndian>()?;
     let protocol_type = c.read_u8()?;

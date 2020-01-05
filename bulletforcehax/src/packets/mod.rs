@@ -207,7 +207,6 @@ pub struct GameProperties<'a> {
 #[derive(Debug, PartialEq)]
 pub enum PlayerProperties<'a> {
     NameOnly(&'a str),
-    // TODO: extend this when there's more info
 }
 
 // This would be an enum, but Rust does not allow multiple enum members with the same value
