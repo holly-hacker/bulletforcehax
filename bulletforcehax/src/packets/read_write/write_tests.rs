@@ -114,10 +114,12 @@ mod writing_protocol_types_tests {
     }
 
     #[test]
-    #[ignore = "Array not yet implemented"]
     fn can_write_array() -> PacketWriteResult<()> {
         let ref mut writer: Vec<u8> = Vec::new();
-        // write_value_of_type(writer, ProtocolValue::Array(DataType.Bool, [true, false, true])?;
+        write_value_of_type(
+            writer,
+            ProtocolValue::Array(vec![ProtocolValue::Bool(true), ProtocolValue::Bool(false), ProtocolValue::Bool(true)]),
+        )?;
         assert_eq!(writer, &vec![121, 0, 3, 111, 1, 0, 1]);
         Ok(())
     }
