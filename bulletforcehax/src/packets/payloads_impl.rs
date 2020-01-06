@@ -1,5 +1,6 @@
 use super::macros::*;
 use super::*;
+use either::Either;
 use log::warn;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -56,7 +57,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
                 let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
                 int1 | (int2 << 32)
             },
-            mean_rank: get_protocol_float(&mut table, ProtocolValue::String("meanRank"))?,
+            mean_rank: get_protocol_int_or_float(&mut table, ProtocolValue::String("meanRank"))?,
             mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
             average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
             event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
@@ -95,7 +96,13 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
                 ProtocolValue::Integer((self.allowed_weapons >> 32) as u32),
             ]),
         );
-        map.insert(ProtocolValue::String("meanRank"), ProtocolValue::Float(self.mean_rank));
+        map.insert(
+            ProtocolValue::String("meanRank"),
+            match self.mean_rank {
+                Either::Left(x) => ProtocolValue::Integer(x),
+                Either::Right(x) => ProtocolValue::Float(x),
+            },
+        );
         map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
         map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
         map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
@@ -139,7 +146,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
             dedicated: get_protocol_bool(&mut table, ProtocolValue::String("dedicated"))?,
             match_started: get_protocol_bool(&mut table, ProtocolValue::String("matchStarted"))?,
             mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
-            mean_rank: get_protocol_int(&mut table, ProtocolValue::String("meanRank"))?,
+            mean_rank: get_protocol_int_or_float(&mut table, ProtocolValue::String("meanRank"))?,
             room_type: get_protocol_byte(&mut table, ProtocolValue::String("roomType"))?,
             switching_map: get_protocol_bool(&mut table, ProtocolValue::String("switchingmap"))?,
             allowed_weapons: {
@@ -207,7 +214,13 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<
         map.insert(ProtocolValue::String("dedicated"), ProtocolValue::Bool(self.dedicated));
         map.insert(ProtocolValue::String("matchStarted"), ProtocolValue::Bool(self.match_started));
         map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
-        map.insert(ProtocolValue::String("meanRank"), ProtocolValue::Integer(self.mean_rank));
+        map.insert(
+            ProtocolValue::String("meanRank"),
+            match self.mean_rank {
+                Either::Left(x) => ProtocolValue::Integer(x),
+                Either::Right(x) => ProtocolValue::Float(x),
+            },
+        );
         map.insert(ProtocolValue::String("roomType"), ProtocolValue::Byte(self.room_type));
         map.insert(ProtocolValue::String("switchingmap"), ProtocolValue::Bool(self.switching_map));
         map.insert(

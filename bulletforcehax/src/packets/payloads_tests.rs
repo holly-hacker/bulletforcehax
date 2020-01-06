@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod packets_payload_tests {
     use super::super::*;
+    use either::Either;
     use std::convert::TryFrom;
 
     #[test]
@@ -20,7 +21,7 @@ mod packets_payload_tests {
                 dedicated: false,
                 hardcore: false,
                 allowed_weapons: 0x1234567890ABCDEF,
-                mean_rank: 12.34,
+                mean_rank: Either::Right(12.34),
                 mean_kd: 2.,
                 average_rank: 1337,
                 event_code: 0,
@@ -55,7 +56,7 @@ mod packets_payload_tests {
                 dedicated: false,
                 hardcore: false,
                 allowed_weapons: 0x1234567890ABCDEF,
-                mean_rank: 12,
+                mean_rank: Either::Left(12),
                 mean_kd: 2.,
                 average_rank: 1337,
                 event_code: 0,
