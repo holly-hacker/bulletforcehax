@@ -3,13 +3,13 @@ use super::*;
 use log::{debug, warn};
 use maplit::hashmap;
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 
 impl Packet<'_> {
     pub fn read<'a>(data: &'a [u8], direction: Direction) -> PacketReadResult<Packet<'a>> {
-        let photon_packet = PhotonPacket::read(data)?;
+        let photon_packet = PhotonPacket::try_from(data)?;
 
         match photon_packet {
             PhotonPacket::OperationRequest(packet_type, params) => Ok(Packet::OperationRequest(Operation::read(packet_type, params, direction)?)),
@@ -43,7 +43,7 @@ impl Packet<'_> {
             }
         };
 
-        Ok(photon_packet.into_vec()?)
+        Ok(photon_packet.try_into()?)
     }
 }
 
@@ -65,12 +65,12 @@ impl<'s> Event<'s> {
             }),
             227 => err(Event::Match, &params),
             228 => err(Event::QueueState, &params),
-            229 => Ok(Event::GameListUpdate(GameInfo::new_from_hashtable_table(get_u8_hashtable(
+            229 => Ok(Event::GameListUpdate(GameInfo::try_from_hashtable_table(get_u8_hashtable(
                 &mut params,
                 ParameterCode::GameList,
             )?)?)),
             230 => Ok(Event::GameList(
-                GameInfo::new_from_hashtable_table(get_u8_hashtable(&mut params, ParameterCode::GameList)?).map(|mut table| {
+                GameInfo::try_from_hashtable_table(get_u8_hashtable(&mut params, ParameterCode::GameList)?).map(|mut table| {
                     table
                         .drain()
                         .map(|(_key, value)| value.expect("GameList packet contained removed game"))

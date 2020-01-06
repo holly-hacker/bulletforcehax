@@ -1,10 +1,29 @@
 use super::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use read_write::{read_debug_string, read_parameter_table, write_debug_string, write_parameter_table};
+use std::convert::{TryFrom, TryInto};
 use std::io::Cursor;
 
 impl PhotonPacket<'_> {
-    pub fn read<'a>(data: &'a [u8]) -> PhotonReadResult<PhotonPacket<'a>> {
+    fn get_type(&self) -> u8 {
+        match self {
+            // PhotonPacket::Init => 0,
+            // PhotonPacket::InitResponse => 1,
+            PhotonPacket::OperationRequest(_, _) => 2,
+            PhotonPacket::OperationResponse(_, _, _, _) => 3,
+            PhotonPacket::Event(_, _) => 4,
+            PhotonPacket::InternalOperationRequest(_, _) => 6,
+            PhotonPacket::InternalOperationResponse(_, _, _, _) => 7,
+            // PhotonPacket::Message => 8,
+            // PhotonPacket::RawMessage => 9,
+        }
+    }
+}
+
+impl<'s> TryFrom<&'s [u8]> for PhotonPacket<'s> {
+    type Error = PhotonReadError;
+
+    fn try_from<'a>(data: &'a [u8]) -> PhotonReadResult<PhotonPacket<'a>> {
         let ref mut c = Cursor::new(data);
         let magic = c.read_u8()?;
         if magic != 0xF3 {
@@ -44,22 +63,12 @@ impl PhotonPacket<'_> {
             _ => Err(PhotonReadError::UnknownPacketType(packet_type)),
         }
     }
+}
 
-    fn get_type(&self) -> u8 {
-        match self {
-            // PhotonPacket::Init => 0,
-            // PhotonPacket::InitResponse => 1,
-            PhotonPacket::OperationRequest(_, _) => 2,
-            PhotonPacket::OperationResponse(_, _, _, _) => 3,
-            PhotonPacket::Event(_, _) => 4,
-            PhotonPacket::InternalOperationRequest(_, _) => 6,
-            PhotonPacket::InternalOperationResponse(_, _, _, _) => 7,
-            // PhotonPacket::Message => 8,
-            // PhotonPacket::RawMessage => 9,
-        }
-    }
+impl<'s> TryInto<Vec<u8>> for PhotonPacket<'s> {
+    type Error = PhotonWriteError;
 
-    pub fn into_vec(self) -> PhotonWriteResult<Vec<u8>> {
+    fn try_into(self) -> PhotonWriteResult<Vec<u8>> {
         let mut vec = Vec::new();
         let ref mut writer = vec;
 

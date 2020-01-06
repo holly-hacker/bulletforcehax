@@ -35,7 +35,7 @@ mod packets_payload_tests {
         let info_clone = gen();
 
         let ht = info.into();
-        let info_new = GameInfo::new_from_hashtable(ht).unwrap().unwrap();
+        let info_new = GameInfo::try_from_hashtable(ht).unwrap().unwrap();
         assert_eq!(info_clone, info_new);
     }
 

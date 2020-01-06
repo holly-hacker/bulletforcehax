@@ -6,21 +6,21 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 
 impl<'s> GameInfo<'s> {
-    pub fn new_from_hashtable_table<'a>(
+    pub fn try_from_hashtable_table<'a>(
         big_table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
     ) -> PacketReadResult<HashMap<&'a str, Option<GameInfo<'a>>>> {
         let mut map: HashMap<&'a str, Option<GameInfo<'a>>> = HashMap::new();
         for (key, value) in big_table {
             // could look into getting map past the borrow checker
             let ht = unwrap_protocol_hashtable(value)?;
-            let val = GameInfo::new_from_hashtable(ht)?;
+            let val = GameInfo::try_from_hashtable(ht)?;
             map.insert(unwrap_protocol_string(key)?, val);
         }
 
         Ok(map)
     }
 
-    pub fn new_from_hashtable(table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Option<GameInfo<'s>>> {
+    pub fn try_from_hashtable(table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Option<GameInfo<'s>>> {
         if table.contains_key(&ProtocolValue::Byte(251)) {
             // got removed
             return Ok(None);
