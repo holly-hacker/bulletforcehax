@@ -74,7 +74,6 @@ impl<'s> Event<'s> {
                     table
                         .drain()
                         .map(|(_key, value)| value.expect("GameList packet contained removed game"))
-                        .into_iter()
                         .collect()
                 })?,
             )),
@@ -98,7 +97,7 @@ impl<'s> Event<'s> {
             _ => Err(PacketReadError::UnknownEventType(event_type)),
         };
 
-        if ret.is_ok() && params.len() > 0 {
+        if ret.is_ok() && !params.is_empty() {
             warn!("Missed event parameters: {:#?}, obj is {:#?}", params, ret);
         }
 
@@ -125,7 +124,7 @@ impl<'s> Event<'s> {
     }
 
     pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
-        fn err<'a>(event: Event<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
+        fn err(event: Event<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
             Err(PacketWriteError::UnimplementedEventType(event))
         }
 
@@ -176,7 +175,7 @@ impl<'s> Event<'s> {
                 actor_nr,
                 player_properties,
             } => Ok(hashmap! {
-                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
+                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(ProtocolValue::Integer).collect()),
                 ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
                 ParameterCode::PlayerProperties => ProtocolValue::Hashtable(player_properties.into()),
             }),
@@ -256,7 +255,7 @@ impl<'s> Operation<'s> {
             248 => err(Operation::ChangeGroups, &params),
             250 => err(Operation::ExchangeKeysForEncryption, &params),
             251 => err(Operation::GetProperties, &params),
-            252 if params.len() == 0 => Ok(Operation::SetPropertiesEmpty()),
+            252 if !params.is_empty() => Ok(Operation::SetPropertiesEmpty()),
             252 if params.contains_key(&ParameterCode::ActorNr) => Ok(Operation::SetPropertiesActor {
                 broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
                 actor_nr: get_u8_int(&mut params, ParameterCode::ActorNr)?,
@@ -286,7 +285,7 @@ impl<'s> Operation<'s> {
             _ => Err(PacketReadError::UnknownOperationType(operation_type)),
         };
 
-        if ret.is_ok() && params.len() > 0 {
+        if ret.is_ok() && !params.is_empty() {
             warn!("Missed operation parameters: {:#?}, obj is {:#?}", params, ret);
         }
 
@@ -329,7 +328,7 @@ impl<'s> Operation<'s> {
     }
 
     pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
-        fn err<'a>(operation: Operation<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
+        fn err(operation: Operation<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
             Err(PacketWriteError::UnimplementedOperationType(operation))
         }
 
@@ -373,7 +372,7 @@ impl<'s> Operation<'s> {
                 actor_nr,
                 game_properties,
             } => Ok(hashmap! {
-                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(|id| ProtocolValue::Integer(id)).collect()),
+                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(ProtocolValue::Integer).collect()),
                 ParameterCode::ActorNr => ProtocolValue::Integer(actor_nr),
                 ParameterCode::GameProperties => ProtocolValue::Hashtable(game_properties.into()),
             }),
@@ -435,8 +434,8 @@ impl<'s> Operation<'s> {
 }
 
 impl<'s> InternalOperation {
-    pub fn read<'a>(operation_type: u8, mut params: ParameterTable<'a>, direction: Direction) -> PacketReadResult<InternalOperation> {
-        fn err<'a>(operation: InternalOperation, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
+    pub fn read(operation_type: u8, mut params: ParameterTable<'_>, direction: Direction) -> PacketReadResult<InternalOperation> {
+        fn err(operation: InternalOperation, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
             debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedInternalOperationType(operation))
         }
@@ -455,7 +454,7 @@ impl<'s> InternalOperation {
             _ => Err(PacketReadError::UnknownInternalOperationType(operation_type)),
         };
 
-        if ret.is_ok() && params.len() > 0 {
+        if ret.is_ok() && !params.is_empty() {
             warn!("Missed operation parameters: {:#?}, obj is {:#?}", params, ret);
         }
 

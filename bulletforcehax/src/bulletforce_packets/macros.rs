@@ -6,6 +6,7 @@ use std::collections::HashMap;
 macro_rules! gen_protocol_type_functions {
     ($type_name:ident, $type:ty, $protocol_type:path) => {
         paste::item! {
+            #[allow(clippy::needless_lifetimes)]
             pub fn [<unwrap_protocol_ $type_name>]<'a>(protocol_type: ProtocolValue<'a>) -> PacketReadResult<$type> {
                 match protocol_type {
                     $protocol_type(i) => Ok(i),

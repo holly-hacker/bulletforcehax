@@ -66,7 +66,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
             byte_255: get_protocol_byte(&mut table, ProtocolValue::Byte(255))?,
         });
 
-        if ret.is_ok() && table.len() > 0 {
+        if ret.is_ok() && !table.is_empty() {
             warn!("Missed GameInfo parameters: {:#?}, obj is {:#?}", table, ret);
         }
 
@@ -166,7 +166,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
             store_id: get_protocol_string(&mut table, ProtocolValue::String("storeID"))?,
         });
 
-        if ret.is_ok() && table.len() > 0 {
+        if ret.is_ok() && !table.is_empty() {
             warn!("Missed GameProperties parameters: {:#?}, obj is {:#?}", table, ret);
         }
 
@@ -249,7 +249,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProper
         let ret = Ok(PlayerProperties::NameOnly(get_protocol_string(&mut table, ProtocolValue::Byte(255))?));
 
         // can't be hit, actually
-        if ret.is_ok() && table.len() > 0 {
+        if ret.is_ok() && !table.is_empty() {
             warn!("Missed PlayerProperties parameters: {:#?}, obj is {:#?}", table, ret);
         }
 

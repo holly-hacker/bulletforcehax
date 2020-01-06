@@ -63,7 +63,10 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
         ProtocolValue::Array(x) => {
             c.write_u16::<BigEndian>(x.len() as u16)?;
             // if we hit this, we may need to implement returning an empty array of nulls
-            assert!(x.len() > 0, "Tried to serialize empty Array! Not allowed since we need a protocol type.");
+            assert!(
+                !x.is_empty(),
+                "Tried to serialize empty Array! Not allowed since we need a protocol type."
+            );
             let protocol_type = get_value_type(&x[0]);
             c.write_u8(protocol_type)?;
             for i in x {

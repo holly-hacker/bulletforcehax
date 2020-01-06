@@ -1,3 +1,7 @@
+#![warn(clippy::all)]
+#![deny(clippy::correctness)]
+#![allow(clippy::unreadable_literal)]
+
 extern crate wasm_bindgen;
 
 use log::{debug, error, info, Level};

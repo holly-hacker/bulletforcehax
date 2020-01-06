@@ -24,7 +24,7 @@ impl<'s> TryFrom<&'s [u8]> for PhotonPacket<'s> {
     type Error = PhotonReadError;
 
     fn try_from<'a>(data: &'a [u8]) -> PhotonReadResult<PhotonPacket<'a>> {
-        let ref mut c = Cursor::new(data);
+        let c = &mut Cursor::new(data);
         let magic = c.read_u8()?;
         if magic != 0xF3 {
             return Err(PhotonReadError::InvalidMagic(magic));
@@ -70,7 +70,7 @@ impl<'s> TryInto<Vec<u8>> for PhotonPacket<'s> {
 
     fn try_into(self) -> PhotonWriteResult<Vec<u8>> {
         let mut vec = Vec::new();
-        let ref mut writer = vec;
+        let writer = &mut vec;
 
         writer.write_u8(0xF3)?;
         writer.write_u8(self.get_type())?;
