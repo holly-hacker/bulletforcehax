@@ -8,6 +8,39 @@ mod read_write;
 
 type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 
+/// A parsed packet. Can be read/written using the `TryInto` and `TryFrom` methods.
+///
+/// # Example
+///
+/// ## Serializing a packet
+/// ```rust
+/// # use std::collections::HashMap;
+/// # use bulletforcehax::photon::*;
+/// # use std::convert::TryInto;
+/// let mut params = HashMap::new();
+/// params.insert(0x42, ProtocolValue::Float(13.37));
+///
+/// let packet = PhotonPacket::OperationRequest(0x20, params);
+/// let bytes: Vec<u8> = packet.try_into().unwrap();
+/// assert_eq!(bytes, vec![0xF3, 0x02, 0x20, 0, 0x01, 0x42, 0x66, 0x41, 0x55, 0xeb, 0x85]);
+/// ```
+///
+/// ## Deserializing a packet
+/// ```rust
+/// # use std::collections::HashMap;
+/// # use bulletforcehax::photon::*;
+/// # use std::convert::TryFrom;
+/// let bytes = vec![0xF3, 0x02, 0x20, 0, 0x01, 0x42, 0x66, 0x41, 0x55, 0xeb, 0x85];
+/// let packet = PhotonPacket::try_from(bytes.as_slice()).expect("Deserializing failed");
+///
+/// if let PhotonPacket::OperationRequest(packet_type, params) = packet {
+///     assert_eq!(packet_type, 0x20);
+///     assert_eq!(params.len(), 1);
+///     assert_eq!(params[&0x42], ProtocolValue::Float(13.37));
+/// } else {
+///     panic!("Expected OperationRequest");
+/// }
+/// ```
 #[derive(Debug)]
 pub enum PhotonPacket<'a> {
     // Init,
@@ -21,6 +54,7 @@ pub enum PhotonPacket<'a> {
     // RawMessage,
 }
 
+/// A deserialized Photon value, converted to its Rust equivalent.
 #[derive(Debug, PartialEq)]
 pub enum ProtocolValue<'a> {
     Null(),

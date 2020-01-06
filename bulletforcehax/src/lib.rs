@@ -4,7 +4,7 @@ use log::{debug, error, info, Level};
 use wasm_bindgen::prelude::*;
 
 mod bulletforce_packets;
-mod photon;
+pub mod photon;
 use bulletforce_packets::{Direction, Packet};
 
 #[wasm_bindgen]
