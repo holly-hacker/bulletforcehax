@@ -3,6 +3,13 @@ use std::io::Write;
 
 use super::super::*;
 
+pub fn write_debug_string(writer: &mut dyn Write, debug_string: Option<&str>) -> PhotonWriteResult<()> {
+    match debug_string {
+        Some(x) => write_value_of_type(writer, ProtocolValue::String(x)),
+        None => write_value_of_type(writer, ProtocolValue::Null()),
+    }
+}
+
 fn get_value_type(value: &ProtocolValue) -> u8 {
     match value {
         ProtocolValue::Null() => 42,

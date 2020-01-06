@@ -1,6 +1,6 @@
 use super::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use read_write::{read_debug_string, read_parameter_table, write_parameter_table, write_value_of_type};
+use read_write::{read_debug_string, read_parameter_table, write_debug_string, write_parameter_table};
 use std::io::Cursor;
 
 impl PhotonPacket<'_> {
@@ -88,10 +88,7 @@ impl PhotonPacket<'_> {
             PhotonPacket::OperationResponse(packet_type, params, return_value, debug_string) => {
                 writer.write_u8(packet_type)?;
                 writer.write_i16::<BigEndian>(return_value)?;
-                match debug_string {
-                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
-                    None => write_value_of_type(writer, ProtocolValue::Null())?,
-                }
+                write_debug_string(writer, debug_string)?;
                 write_parameter_table(writer, params)?;
                 Ok(())
             }
@@ -108,10 +105,7 @@ impl PhotonPacket<'_> {
             PhotonPacket::InternalOperationResponse(packet_type, params, return_value, debug_string) => {
                 writer.write_u8(packet_type)?;
                 writer.write_i16::<BigEndian>(return_value)?;
-                match debug_string {
-                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
-                    None => write_value_of_type(writer, ProtocolValue::Null())?,
-                }
+                write_debug_string(writer, debug_string)?;
                 write_parameter_table(writer, params)?;
                 Ok(())
             }
