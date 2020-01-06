@@ -5,7 +5,7 @@ mod reading_protocol_types_tests {
     use std::io::Cursor;
 
     #[test]
-    fn can_read_null() -> PacketReadResult<()> {
+    fn can_read_null() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x2au8].as_ref());
         let t = read_value(reader)?;
         assert_eq!(t, ProtocolValue::Null());
@@ -18,7 +18,7 @@ mod reading_protocol_types_tests {
     // TODO: OperationRequest test
 
     #[test]
-    fn can_read_bool() -> PacketReadResult<()> {
+    fn can_read_bool() -> PhotonReadResult<()> {
         let t1 = read_value(&mut Cursor::new([0x6f, 0x00].as_ref()))?;
         let t2 = read_value(&mut Cursor::new([0x6f, 0x01].as_ref()))?;
         assert_eq!(t1, ProtocolValue::Bool(false));
@@ -27,7 +27,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_u8() -> PacketReadResult<()> {
+    fn can_read_u8() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x62, 0x90].as_ref());
         let t = read_value(reader)?;
 
@@ -36,7 +36,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_s16() -> PacketReadResult<()> {
+    fn can_read_s16() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x6b, 0xFA, 0xC7].as_ref());
         let t = read_value(reader)?;
 
@@ -45,7 +45,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_s32() -> PacketReadResult<()> {
+    fn can_read_s32() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x69, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
         let t = read_value(reader)?;
 
@@ -54,7 +54,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_s64() -> PacketReadResult<()> {
+    fn can_read_s64() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x6c, 0xCA, 0x11, 0xAB, 0x1E, 0xCA, 0xFE, 0xBA, 0xBE].as_ref());
         let t = read_value(reader)?;
 
@@ -63,7 +63,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_f32() -> PacketReadResult<()> {
+    fn can_read_f32() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x66, 0x42, 0x28, 0x00, 0x00].as_ref());
         let t = read_value(reader)?;
 
@@ -72,7 +72,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_f64() -> PacketReadResult<()> {
+    fn can_read_f64() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x64, 0x40, 0x2a, 0xbd, 0x70, 0xa3, 0xd7, 0x0a, 0x3d].as_ref());
         let t = read_value(reader)?;
 
@@ -81,7 +81,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_strings() -> PacketReadResult<()> {
+    fn can_read_strings() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x73, 0x00, 0x03, 0x61, 0x62, 0x63].as_ref());
         let t = read_value(reader)?;
 
@@ -89,7 +89,7 @@ mod reading_protocol_types_tests {
         Ok(())
     }
     #[test]
-    fn can_read_unicode_strings() -> PacketReadResult<()> {
+    fn can_read_unicode_strings() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x73, 0x00, 0x06, 0x61, 0x62, 0x63, 0xc2, 0xbb, 0x64].as_ref());
         let t = read_value(reader)?;
 
@@ -99,7 +99,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     #[ignore = "ByteArray not yet implemented"]
-    fn can_read_byte_array() -> PacketReadResult<()> {
+    fn can_read_byte_array() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([120, 0, 0, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
         let _t = read_value(reader)?;
 
@@ -109,7 +109,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     #[ignore = "IntArray not yet implemented"]
-    fn can_read_int_array() -> PacketReadResult<()> {
+    fn can_read_int_array() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE].as_ref());
         let _t = read_value(reader)?;
 
@@ -119,7 +119,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     #[ignore = "StringArray not yet implemented"]
-    fn can_read_string_array() -> PacketReadResult<()> {
+    fn can_read_string_array() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0].as_ref());
         let _t = read_value(reader)?;
 
@@ -128,7 +128,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_array() -> PacketReadResult<()> {
+    fn can_read_array() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([121, 0, 3, 111, 1, 0, 1].as_ref());
         let t = read_value(reader)?;
 
@@ -140,7 +140,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_object_array() -> PacketReadResult<()> {
+    fn can_read_object_array() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([122, 0, 3, 115, 0, 3, 0x61, 0x62, 0x63, 42, 107, 0x01, 0x23].as_ref());
         let t = read_value(reader)?;
 
@@ -152,7 +152,7 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    fn can_read_hashtable() -> PacketReadResult<()> {
+    fn can_read_hashtable() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([0x68, 0x00, 0x02, 98, 0xFF, 42, 115, 0x00, 0x03, 0x61, 0x62, 0x63, 111, 0x01].as_ref());
         let t = read_value(reader)?;
 
@@ -167,7 +167,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     #[ignore = "Custom not yet implemented"]
-    fn can_read_custom() -> PacketReadResult<()> {
+    fn can_read_custom() -> PhotonReadResult<()> {
         let ref mut reader = Cursor::new([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
         let _t = read_value(reader)?;
         Ok(())

@@ -5,8 +5,6 @@ pub type PacketWriteResult<T> = Result<T, PacketWriteError>;
 
 #[derive(Debug)]
 pub enum PacketReadError {
-    InvalidMagic(u8),
-    UnknownPacketType(u8),
     UnknownEventType(u8),
     UnknownOperationType(u8),
     UnknownInternalOperationType(u8),
@@ -14,8 +12,6 @@ pub enum PacketReadError {
     UnimplementedEventType(Event<'static>),
     UnimplementedOperationType(Operation<'static>),
     UnimplementedInternalOperationType(InternalOperation),
-    UnknownProtocolValueType(u8),
-    UnimplementedProtocolValueType(ProtocolValue<'static>),
     UnexpectedProtocolValue,
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
@@ -42,7 +38,6 @@ pub enum PacketWriteError {
     UnimplementedEventType(Event<'static>),
     UnimplementedOperationType(Operation<'static>),
     UnimplementedInternalOperationType(InternalOperation),
-    UnimplementedProtocolValueType(ProtocolValue<'static>),
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
 }

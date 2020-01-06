@@ -3,7 +3,9 @@ extern crate wasm_bindgen;
 use log::{debug, error, info, Level};
 use wasm_bindgen::prelude::*;
 
-mod packets;
+mod bulletforce_packets;
+mod photon;
+use bulletforce_packets::{Direction, Packet};
 
 #[wasm_bindgen]
 extern "C" {
@@ -29,7 +31,7 @@ pub fn main() -> Result<(), JsValue> {
 // TODO: perhaps pass boolean or enum that tells which socket we're on
 #[wasm_bindgen]
 pub fn sock_send(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(&data, packets::Direction::Send) {
+    match Packet::read(&data, Direction::Send) {
         Ok(packet) => {
             debug!("SEND: {:?}", packet);
             match packet.into_vec() {
@@ -49,7 +51,7 @@ pub fn sock_send(data: &[u8]) -> Vec<u8> {
 
 #[wasm_bindgen]
 pub fn sock_recv(data: &[u8]) -> Vec<u8> {
-    match packets::Packet::read(&data, packets::Direction::Recv) {
+    match Packet::read(&data, Direction::Recv) {
         Ok(packet) => {
             debug!("RECV: {:?}", packet);
             match packet.into_vec() {

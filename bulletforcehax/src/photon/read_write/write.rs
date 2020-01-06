@@ -28,13 +28,13 @@ fn get_value_type(value: &ProtocolValue) -> u8 {
     }
 }
 
-pub fn write_value_of_type(c: &mut dyn Write, value: ProtocolValue) -> PacketWriteResult<()> {
+pub fn write_value_of_type(c: &mut dyn Write, value: ProtocolValue) -> PhotonWriteResult<()> {
     let type_byte = get_value_type(&value);
     c.write_u8(type_byte)?;
     write_value_of_type_without_type(c, value)
 }
 
-pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue) -> PacketWriteResult<()> {
+pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue) -> PhotonWriteResult<()> {
     match value {
         ProtocolValue::Null() => Ok(()),
         ProtocolValue::Bool(true) => Ok(c.write_u8(1)?),
@@ -50,9 +50,9 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
             c.write_u16::<BigEndian>(bytes.len() as u16)?;
             Ok(c.write_all(bytes)?)
         }
-        ProtocolValue::ByteArray => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::ByteArray)),
-        ProtocolValue::IntegerArray => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::IntegerArray)),
-        ProtocolValue::StringArray => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::StringArray)),
+        ProtocolValue::ByteArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::ByteArray)),
+        ProtocolValue::IntegerArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::IntegerArray)),
+        ProtocolValue::StringArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::StringArray)),
         ProtocolValue::Array(x) => {
             c.write_u16::<BigEndian>(x.len() as u16)?;
             // if we hit this, we may need to implement returning an empty array of nulls
@@ -72,7 +72,7 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
             }
             Ok(())
         }
-        ProtocolValue::Dictionary => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::Dictionary)),
+        ProtocolValue::Dictionary => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::Dictionary)),
         ProtocolValue::Hashtable(x) => {
             c.write_u16::<BigEndian>(x.len() as u16)?;
             for (key, value) in x {
@@ -81,14 +81,14 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
             }
             Ok(())
         }
-        ProtocolValue::EventData => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
-        ProtocolValue::OperationResponse => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationResponse)),
-        ProtocolValue::OperationRequest => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationRequest)),
-        ProtocolValue::Custom => Err(PacketWriteError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
+        ProtocolValue::EventData => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
+        ProtocolValue::OperationResponse => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationResponse)),
+        ProtocolValue::OperationRequest => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationRequest)),
+        ProtocolValue::Custom => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
     }
 }
 
-pub fn write_parameter_table(c: &mut dyn Write, x: HashMap<u8, ProtocolValue>) -> PacketWriteResult<()> {
+pub fn write_parameter_table(c: &mut dyn Write, x: HashMap<u8, ProtocolValue>) -> PhotonWriteResult<()> {
     c.write_u16::<BigEndian>(x.len() as u16)?;
     for (key, value) in x {
         c.write_u8(key)?;

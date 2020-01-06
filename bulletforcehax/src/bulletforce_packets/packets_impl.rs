@@ -1,122 +1,82 @@
 use super::macros::*;
 use super::*;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use log::{debug, warn};
 use maplit::hashmap;
-use read_write::{read_parameter_table, read_string, write_parameter_table, write_value_of_type};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::io::{Cursor, Write};
+
+type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 
 impl Packet<'_> {
     pub fn read<'a>(data: &'a [u8], direction: Direction) -> PacketReadResult<Packet<'a>> {
-        let ref mut c = Cursor::new(data);
-        let magic = c.read_u8()?;
-        if magic != 0xF3 {
-            return Err(PacketReadError::InvalidMagic(magic));
-        }
+        let photon_packet = PhotonPacket::read(data).unwrap(); // TODO: implement error conversion
 
         fn err<'a>(packet: Packet<'static>) -> PacketReadResult<Packet<'a>> {
             Err(PacketReadError::UnimplementedPacketType(packet))
         }
 
-        let packet_type: u8 = c.read_u8()?;
-        match packet_type {
-            0 => err(Packet::Init),
-            1 => err(Packet::InitResponse),
-            2 => Ok(Packet::OperationRequest(Operation::read(c, direction)?)),
-            3 => {
-                let operation_type = c.read_u8()?;
-                Ok(Packet::OperationResponse(
-                    c.read_i16::<BigEndian>()?,
-                    read_string(c)?,
-                    Operation::read_with_type(c, direction, operation_type)?,
-                ))
+        match photon_packet {
+            PhotonPacket::Init => err(Packet::Init),
+            PhotonPacket::InitResponse => err(Packet::InitResponse),
+            PhotonPacket::OperationRequest(packet_type, params) => Ok(Packet::OperationRequest(Operation::read(packet_type, params, direction)?)),
+            PhotonPacket::OperationResponse(packet_type, params, return_code, debug_string) => Ok(Packet::OperationResponse(
+                Operation::read(packet_type, params, direction)?,
+                return_code,
+                debug_string,
+            )),
+            PhotonPacket::Event(packet_type, params) => Ok(Packet::Event(Event::read(packet_type, params, direction)?)),
+            PhotonPacket::InternalOperationRequest(packet_type, params) => {
+                Ok(Packet::InternalOperationRequest(InternalOperation::read(packet_type, params, direction)?))
             }
-            4 => Ok(Packet::Event(Event::read(c, direction)?)),
-            6 => Ok(Packet::InternalOperationRequest(InternalOperation::read(c, direction)?)),
-            7 => {
-                let operation_type = c.read_u8()?;
-                Ok(Packet::InternalOperationResponse(
-                    c.read_i16::<BigEndian>()?,
-                    read_string(c)?,
-                    InternalOperation::read_with_type(c, direction, operation_type)?,
-                ))
-            }
-            8 => err(Packet::Message),
-            9 => err(Packet::RawMessage),
-            _ => Err(PacketReadError::UnknownPacketType(packet_type)),
-        }
-    }
-
-    fn get_type(&self) -> u8 {
-        match self {
-            Packet::Init => 0,
-            Packet::InitResponse => 1,
-            Packet::OperationRequest(_) => 2,
-            Packet::OperationResponse(_, _, _) => 3,
-            Packet::Event(_) => 4,
-            Packet::InternalOperationRequest(_) => 6,
-            Packet::InternalOperationResponse(_, _, _) => 7,
-            Packet::Message => 8,
-            Packet::RawMessage => 9,
+            PhotonPacket::InternalOperationResponse(packet_type, params, return_code, debug_string) => Ok(Packet::InternalOperationResponse(
+                InternalOperation::read(packet_type, params, direction)?,
+                return_code,
+                debug_string,
+            )),
+            PhotonPacket::Message => err(Packet::Message),
+            PhotonPacket::RawMessage => err(Packet::RawMessage),
         }
     }
 
     pub fn into_vec(self) -> PacketWriteResult<Vec<u8>> {
-        let mut vec = Vec::new();
-        let ref mut writer = vec;
-
-        writer.write_u8(0xF3)?;
-        writer.write_u8(self.get_type())?;
-
-        fn err<'a>(packet: Packet<'static>) -> PacketWriteResult<()> {
+        fn err<'a>(packet: Packet<'static>) -> PacketWriteResult<PhotonPacket<'a>> {
             Err(PacketWriteError::UnimplementedPacketType(packet))
         }
 
-        match self {
+        let photon_packet: PhotonPacket = match self {
             Packet::Init => err(Packet::Init),
             Packet::InitResponse => err(Packet::InitResponse),
-            Packet::OperationRequest(operation) => operation.write(writer),
-            Packet::OperationResponse(return_value, debug_string, operation) => {
-                writer.write_u8(operation.get_type())?;
-                writer.write_i16::<BigEndian>(return_value)?;
-                match debug_string {
-                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
-                    None => write_value_of_type(writer, ProtocolValue::Null())?,
-                }
-                operation.write_without_type(writer)?;
-                Ok(())
+            Packet::OperationRequest(operation) => Ok(PhotonPacket::OperationRequest(operation.get_type(), operation.get_param_map()?)),
+            Packet::OperationResponse(operation, return_code, debug_string) => Ok(PhotonPacket::OperationResponse(
+                operation.get_type(),
+                operation.get_param_map()?,
+                return_code,
+                debug_string,
+            )),
+            Packet::Event(event) => Ok(PhotonPacket::Event(event.get_type(), event.get_param_map()?)),
+            Packet::InternalOperationRequest(operation) => {
+                Ok(PhotonPacket::InternalOperationRequest(operation.get_type(), operation.get_param_map()?))
             }
-            Packet::Event(event) => event.write(writer),
-            Packet::InternalOperationRequest(operation) => operation.write(writer),
-            Packet::InternalOperationResponse(return_value, debug_string, operation) => {
-                writer.write_u8(operation.get_type())?;
-                writer.write_i16::<BigEndian>(return_value)?;
-                match debug_string {
-                    Some(x) => write_value_of_type(writer, ProtocolValue::String(x))?,
-                    None => write_value_of_type(writer, ProtocolValue::Null())?,
-                }
-                operation.write_without_type(writer)?;
-                Ok(())
-            }
+            Packet::InternalOperationResponse(operation, return_code, debug_string) => Ok(PhotonPacket::InternalOperationResponse(
+                operation.get_type(),
+                operation.get_param_map()?,
+                return_code,
+                debug_string,
+            )),
             Packet::Message => err(Packet::Message),
             Packet::RawMessage => err(Packet::RawMessage),
         }?;
 
-        Ok(vec)
+        Ok(photon_packet.into_vec().unwrap()) // TODO: implement error conversion
     }
 }
 
 impl<'s> Event<'s> {
-    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Event<'a>> {
+    pub fn read<'a>(event_type: u8, mut params: ParameterTable<'a>, direction: Direction) -> PacketReadResult<Event<'a>> {
         fn err<'a>(event: Event<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
             Err(PacketReadError::UnimplementedEventType(event))
         }
-
-        let event_type = c.read_u8()?;
-        let mut params = read_parameter_table(c)?;
 
         let ret = match event_type {
             210 => err(Event::AzureNodeInfo, &params),
@@ -169,13 +129,7 @@ impl<'s> Event<'s> {
         ret
     }
 
-    pub fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
-        c.write_u8(self.get_type())?;
-        write_parameter_table(c, self.get_param_map()?)?;
-        Ok(())
-    }
-
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         match self {
             Event::AzureNodeInfo => 210,
             Event::AuthEvent => 223,
@@ -194,7 +148,7 @@ impl<'s> Event<'s> {
         }
     }
 
-    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+    pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
         fn err<'a>(event: Event<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
             Err(PacketWriteError::UnimplementedEventType(event))
         }
@@ -255,18 +209,11 @@ impl<'s> Event<'s> {
 }
 
 impl<'s> Operation<'s> {
-    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<Operation<'a>> {
-        let operation_type = c.read_u8()?;
-
-        Operation::read_with_type(c, direction, operation_type)
-    }
-    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<Operation<'a>> {
+    pub fn read<'a>(operation_type: u8, mut params: ParameterTable<'a>, direction: Direction) -> PacketReadResult<Operation<'a>> {
         fn err<'a>(operation: Operation<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Operation<'a>> {
             debug!("Unimplemented Operation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedOperationType(operation))
         }
-
-        let mut params = read_parameter_table(c)?;
 
         let ret = match operation_type {
             217 => err(Operation::GetGameList, &params),
@@ -370,16 +317,6 @@ impl<'s> Operation<'s> {
         ret
     }
 
-    fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
-        c.write_u8(self.get_type())?;
-        self.write_without_type(c)
-    }
-
-    pub fn write_without_type(self, c: &mut dyn Write) -> PacketWriteResult<()> {
-        write_parameter_table(c, self.get_param_map()?)?;
-        Ok(())
-    }
-
     pub fn get_type(&self) -> u8 {
         match self {
             Operation::GetGameList => 217,
@@ -415,7 +352,7 @@ impl<'s> Operation<'s> {
         }
     }
 
-    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+    pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
         fn err<'a>(operation: Operation<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
             Err(PacketWriteError::UnimplementedOperationType(operation))
         }
@@ -522,18 +459,11 @@ impl<'s> Operation<'s> {
 }
 
 impl<'s> InternalOperation {
-    pub fn read<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction) -> PacketReadResult<InternalOperation> {
-        let operation_type = c.read_u8()?;
-
-        InternalOperation::read_with_type(c, direction, operation_type)
-    }
-    pub fn read_with_type<'a>(c: &mut Cursor<&'a [u8]>, direction: Direction, operation_type: u8) -> PacketReadResult<InternalOperation> {
+    pub fn read<'a>(operation_type: u8, mut params: ParameterTable<'a>, direction: Direction) -> PacketReadResult<InternalOperation> {
         fn err<'a>(operation: InternalOperation, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<InternalOperation> {
             debug!("Unimplemented InternalOperation: {:?}, {:#?}", operation, params);
             Err(PacketReadError::UnimplementedInternalOperationType(operation))
         }
-
-        let mut params = read_parameter_table(c)?;
 
         let ret = match operation_type {
             0 => err(InternalOperation::InitEncryption, &params),
@@ -556,16 +486,6 @@ impl<'s> InternalOperation {
         ret
     }
 
-    pub fn write(self, c: &mut dyn Write) -> PacketWriteResult<()> {
-        c.write_u8(self.get_type())?;
-        self.write_without_type(c)
-    }
-
-    pub fn write_without_type(self, c: &mut dyn Write) -> PacketWriteResult<()> {
-        write_parameter_table(c, self.get_param_map()?)?;
-        Ok(())
-    }
-
     pub fn get_type(&self) -> u8 {
         match self {
             InternalOperation::InitEncryption => 0,
@@ -574,7 +494,7 @@ impl<'s> InternalOperation {
         }
     }
 
-    fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
+    pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
         fn err<'a>(operation: InternalOperation) -> PacketWriteResult<HashMap<u8, ProtocolValue<'a>>> {
             Err(PacketWriteError::UnimplementedInternalOperationType(operation))
         }
