@@ -162,6 +162,7 @@ pub enum Direction {
 
 #[derive(Debug, PartialEq)]
 pub struct GameInfo<'a> {
+    // shared with GameProperties
     game_id: &'a str,
     room_id: &'a str,
     store_id: &'a str,
@@ -179,6 +180,7 @@ pub struct GameInfo<'a> {
     mean_kd: f32,
     average_rank: u32,
     event_code: u32,
+
     // byte_251: bool, mentions whether this game got removed. either this or the other fields are present
     byte_252: u8,
     byte_253: bool,
@@ -187,6 +189,26 @@ pub struct GameInfo<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct GameProperties<'a> {
+    // shared with GameInfo, names are contained in byte_250
+    game_id: &'a str,
+    room_id: &'a str,
+    store_id: &'a str,
+    room_name: &'a str,
+    mode_name: &'a str,
+    password: &'a str,
+    map_name: &'a str,
+    match_started: bool,
+    switching_map: bool,
+    room_type: u8,
+    dedicated: bool,
+    hardcore: bool,
+    allowed_weapons: u64,
+    mean_rank: u32,
+    mean_kd: f32,
+    average_rank: u32,
+    event_code: u32,
+
+    // exclusive for GameProperties
     spectate_for_mods_only: bool,
     max_ping: u16,
     banned_weapon_message: &'a str,
@@ -205,25 +227,6 @@ pub struct GameProperties<'a> {
     byte_255: Option<u8>,
     /// Only present in Operation::CreateGame* response
     byte_248: Option<u32>,
-
-    // fields contained in byte_250
-    room_name: &'a str,
-    map_name: &'a str,
-    mode_name: &'a str,
-    password: &'a str,
-    hardcore: bool,
-    dedicated: bool,
-    match_started: bool,
-    mean_kd: f32,
-    mean_rank: u32,
-    room_type: u8,
-    switching_map: bool,
-    allowed_weapons: u64,
-    event_code: u32,
-    average_rank: u32,
-    game_id: &'a str,
-    room_id: &'a str,
-    store_id: &'a str,
 }
 
 #[derive(Debug, PartialEq)]
