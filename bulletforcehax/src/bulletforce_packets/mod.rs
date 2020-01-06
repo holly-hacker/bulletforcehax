@@ -108,7 +108,8 @@ pub enum Operation<'a> {
     },
     SetPropertiesActor {
         broadcast: bool,
-        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, // updates select properties of an actor.
+        /// updates select properties of an actor
+        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
         actor_nr: u32,
     },
     SetPropertiesEmpty(),

@@ -69,13 +69,17 @@ pub enum ProtocolValue<'a> {
     OperationRequest,
     OperationResponse,
     EventData,
-    Array(Vec<ProtocolValue<'a>>), // An array of predetermined type, C# type is Array.
+    /// array of predetermined type, `Array` in C#.
+    Array(Vec<ProtocolValue<'a>>),
+    /// array of arbitrary types
     ObjectArray(Vec<ProtocolValue<'a>>),
     ByteArray,
     StringArray,
     IntegerArray,
-    Dictionary, // Map<Object, Object>, predefined types, C# type is IDictionary/Dictionary<T1, T2>, TODO
-    Hashtable(HashMap<ProtocolValue<'a>, ProtocolValue<'a>>), // Map<Object, Object>, random types, C# type is Hashtable/Dictionary<object, object>
+    /// hashmap of predefined types, `IDictionary/Dictionary<T1, T2>` in C#
+    Dictionary,
+    /// hashmap of arbitrary types, `Hashtable` or `Dictionary<object, object>` in C#
+    Hashtable(HashMap<ProtocolValue<'a>, ProtocolValue<'a>>),
     Custom,
 }
 
