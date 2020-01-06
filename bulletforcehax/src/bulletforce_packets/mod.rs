@@ -12,15 +12,11 @@ mod payloads_tests;
 
 #[derive(Debug)]
 pub enum Packet<'a> {
-    Init,
-    InitResponse,
     OperationRequest(Operation<'a>),
     OperationResponse(Operation<'a>, i16, Option<&'a str>),
     Event(Event<'a>),
     InternalOperationRequest(InternalOperation),
     InternalOperationResponse(InternalOperation, i16, Option<&'a str>),
-    Message,
-    RawMessage,
 }
 
 #[derive(Debug)]

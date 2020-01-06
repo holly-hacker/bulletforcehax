@@ -11,14 +11,8 @@ impl PhotonPacket<'_> {
             return Err(PhotonReadError::InvalidMagic(magic));
         }
 
-        fn err<'a>(packet: PhotonPacket<'static>) -> PhotonReadResult<PhotonPacket<'a>> {
-            Err(PhotonReadError::UnimplementedPacketType(packet))
-        }
-
         let packet_type: u8 = c.read_u8()?;
         match packet_type {
-            0 => err(PhotonPacket::Init),
-            1 => err(PhotonPacket::InitResponse),
             2 => Ok(PhotonPacket::OperationRequest(c.read_u8()?, read_parameter_table(c)?)),
             3 => {
                 let operation_type = c.read_u8()?;
@@ -46,23 +40,22 @@ impl PhotonPacket<'_> {
                     debug_string,
                 ))
             }
-            8 => err(PhotonPacket::Message),
-            9 => err(PhotonPacket::RawMessage),
+            0 | 1 | 8 | 9 => Err(PhotonReadError::UnimplementedPacketType(packet_type)),
             _ => Err(PhotonReadError::UnknownPacketType(packet_type)),
         }
     }
 
     fn get_type(&self) -> u8 {
         match self {
-            PhotonPacket::Init => 0,
-            PhotonPacket::InitResponse => 1,
+            // PhotonPacket::Init => 0,
+            // PhotonPacket::InitResponse => 1,
             PhotonPacket::OperationRequest(_, _) => 2,
             PhotonPacket::OperationResponse(_, _, _, _) => 3,
             PhotonPacket::Event(_, _) => 4,
             PhotonPacket::InternalOperationRequest(_, _) => 6,
             PhotonPacket::InternalOperationResponse(_, _, _, _) => 7,
-            PhotonPacket::Message => 8,
-            PhotonPacket::RawMessage => 9,
+            // PhotonPacket::Message => 8,
+            // PhotonPacket::RawMessage => 9,
         }
     }
 
@@ -73,45 +66,32 @@ impl PhotonPacket<'_> {
         writer.write_u8(0xF3)?;
         writer.write_u8(self.get_type())?;
 
-        fn err<'a>(packet: PhotonPacket<'static>) -> PhotonWriteResult<()> {
-            Err(PhotonWriteError::UnimplementedPacketType(packet))
-        }
-
         match self {
-            PhotonPacket::Init => err(PhotonPacket::Init),
-            PhotonPacket::InitResponse => err(PhotonPacket::InitResponse),
             PhotonPacket::OperationRequest(packet_type, params) => {
                 writer.write_u8(packet_type)?;
                 write_parameter_table(writer, params)?;
-                Ok(())
             }
             PhotonPacket::OperationResponse(packet_type, params, return_value, debug_string) => {
                 writer.write_u8(packet_type)?;
                 writer.write_i16::<BigEndian>(return_value)?;
                 write_debug_string(writer, debug_string)?;
                 write_parameter_table(writer, params)?;
-                Ok(())
             }
             PhotonPacket::Event(packet_type, params) => {
                 writer.write_u8(packet_type)?;
                 write_parameter_table(writer, params)?;
-                Ok(())
             }
             PhotonPacket::InternalOperationRequest(packet_type, params) => {
                 writer.write_u8(packet_type)?;
                 write_parameter_table(writer, params)?;
-                Ok(())
             }
             PhotonPacket::InternalOperationResponse(packet_type, params, return_value, debug_string) => {
                 writer.write_u8(packet_type)?;
                 writer.write_i16::<BigEndian>(return_value)?;
                 write_debug_string(writer, debug_string)?;
                 write_parameter_table(writer, params)?;
-                Ok(())
             }
-            PhotonPacket::Message => err(PhotonPacket::Message),
-            PhotonPacket::RawMessage => err(PhotonPacket::RawMessage),
-        }?;
+        }
 
         Ok(vec)
     }

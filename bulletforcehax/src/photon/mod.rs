@@ -10,15 +10,15 @@ type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 
 #[derive(Debug)]
 pub enum PhotonPacket<'a> {
-    Init,
-    InitResponse,
+    // Init,
+    // InitResponse,
     OperationRequest(u8, ParameterTable<'a>),
     OperationResponse(u8, ParameterTable<'a>, i16, Option<&'a str>),
     Event(u8, ParameterTable<'a>),
     InternalOperationRequest(u8, ParameterTable<'a>),
     InternalOperationResponse(u8, ParameterTable<'a>, i16, Option<&'a str>),
-    Message,
-    RawMessage,
+    // Message,
+    // RawMessage,
 }
 
 #[derive(Debug, PartialEq)]

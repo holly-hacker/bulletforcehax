@@ -8,7 +8,7 @@ pub enum PhotonReadError {
     InvalidMagic(u8),
     UnknownPacketType(u8),
     UnknownProtocolValueType(u8),
-    UnimplementedPacketType(PhotonPacket<'static>),
+    UnimplementedPacketType(u8),
     UnimplementedProtocolValueType(ProtocolValue<'static>),
     InvalidDebugStringType,
     IOError(std::io::Error),
@@ -29,20 +29,12 @@ impl From<std::str::Utf8Error> for PhotonReadError {
 
 #[derive(Debug)]
 pub enum PhotonWriteError {
-    UnimplementedPacketType(PhotonPacket<'static>),
     UnimplementedProtocolValueType(ProtocolValue<'static>),
     IOError(std::io::Error),
-    EncodingError(std::str::Utf8Error),
 }
 
 impl From<std::io::Error> for PhotonWriteError {
     fn from(error: std::io::Error) -> Self {
         PhotonWriteError::IOError(error)
-    }
-}
-
-impl From<std::str::Utf8Error> for PhotonWriteError {
-    fn from(error: std::str::Utf8Error) -> Self {
-        PhotonWriteError::EncodingError(error)
     }
 }

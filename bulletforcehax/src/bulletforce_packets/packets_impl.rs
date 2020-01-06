@@ -9,15 +9,9 @@ type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 
 impl Packet<'_> {
     pub fn read<'a>(data: &'a [u8], direction: Direction) -> PacketReadResult<Packet<'a>> {
-        let photon_packet = PhotonPacket::read(data).unwrap(); // TODO: implement error conversion
-
-        fn err<'a>(packet: Packet<'static>) -> PacketReadResult<Packet<'a>> {
-            Err(PacketReadError::UnimplementedPacketType(packet))
-        }
+        let photon_packet = PhotonPacket::read(data)?;
 
         match photon_packet {
-            PhotonPacket::Init => err(Packet::Init),
-            PhotonPacket::InitResponse => err(Packet::InitResponse),
             PhotonPacket::OperationRequest(packet_type, params) => Ok(Packet::OperationRequest(Operation::read(packet_type, params, direction)?)),
             PhotonPacket::OperationResponse(packet_type, params, return_code, debug_string) => Ok(Packet::OperationResponse(
                 Operation::read(packet_type, params, direction)?,
@@ -33,41 +27,23 @@ impl Packet<'_> {
                 return_code,
                 debug_string,
             )),
-            PhotonPacket::Message => err(Packet::Message),
-            PhotonPacket::RawMessage => err(Packet::RawMessage),
         }
     }
 
     pub fn into_vec(self) -> PacketWriteResult<Vec<u8>> {
-        fn err<'a>(packet: Packet<'static>) -> PacketWriteResult<PhotonPacket<'a>> {
-            Err(PacketWriteError::UnimplementedPacketType(packet))
-        }
-
         let photon_packet: PhotonPacket = match self {
-            Packet::Init => err(Packet::Init),
-            Packet::InitResponse => err(Packet::InitResponse),
-            Packet::OperationRequest(operation) => Ok(PhotonPacket::OperationRequest(operation.get_type(), operation.get_param_map()?)),
-            Packet::OperationResponse(operation, return_code, debug_string) => Ok(PhotonPacket::OperationResponse(
-                operation.get_type(),
-                operation.get_param_map()?,
-                return_code,
-                debug_string,
-            )),
-            Packet::Event(event) => Ok(PhotonPacket::Event(event.get_type(), event.get_param_map()?)),
-            Packet::InternalOperationRequest(operation) => {
-                Ok(PhotonPacket::InternalOperationRequest(operation.get_type(), operation.get_param_map()?))
+            Packet::OperationRequest(operation) => PhotonPacket::OperationRequest(operation.get_type(), operation.get_param_map()?),
+            Packet::OperationResponse(operation, return_code, debug_string) => {
+                PhotonPacket::OperationResponse(operation.get_type(), operation.get_param_map()?, return_code, debug_string)
             }
-            Packet::InternalOperationResponse(operation, return_code, debug_string) => Ok(PhotonPacket::InternalOperationResponse(
-                operation.get_type(),
-                operation.get_param_map()?,
-                return_code,
-                debug_string,
-            )),
-            Packet::Message => err(Packet::Message),
-            Packet::RawMessage => err(Packet::RawMessage),
-        }?;
+            Packet::Event(event) => (PhotonPacket::Event(event.get_type(), event.get_param_map()?)),
+            Packet::InternalOperationRequest(operation) => PhotonPacket::InternalOperationRequest(operation.get_type(), operation.get_param_map()?),
+            Packet::InternalOperationResponse(operation, return_code, debug_string) => {
+                (PhotonPacket::InternalOperationResponse(operation.get_type(), operation.get_param_map()?, return_code, debug_string))
+            }
+        };
 
-        Ok(photon_packet.into_vec().unwrap()) // TODO: implement error conversion
+        Ok(photon_packet.into_vec()?)
     }
 }
 
