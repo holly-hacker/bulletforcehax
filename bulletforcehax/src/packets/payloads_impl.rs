@@ -34,21 +34,21 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
 
     fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameInfo<'s>> {
         let ret = Ok(GameInfo {
-            game_id: get_u8_string(&mut table, ProtocolValue::String("gameID"))?,
-            room_id: get_u8_string(&mut table, ProtocolValue::String("roomID"))?,
-            store_id: get_u8_string(&mut table, ProtocolValue::String("storeID"))?,
-            room_name: get_u8_string(&mut table, ProtocolValue::String("roomName"))?,
-            mode_name: get_u8_string(&mut table, ProtocolValue::String("modeName"))?,
-            password: get_u8_string(&mut table, ProtocolValue::String("password"))?,
-            map_name: get_u8_string(&mut table, ProtocolValue::String("mapName"))?,
-            match_started: get_u8_bool(&mut table, ProtocolValue::String("matchStarted"))?,
-            switching_map: get_u8_bool(&mut table, ProtocolValue::String("switchingmap"))?,
-            room_type: get_u8_byte(&mut table, ProtocolValue::String("roomType"))?,
-            dedicated: get_u8_bool(&mut table, ProtocolValue::String("dedicated"))?,
-            hardcore: get_u8_bool(&mut table, ProtocolValue::String("hardcore"))?,
+            game_id: get_protocol_string(&mut table, ProtocolValue::String("gameID"))?,
+            room_id: get_protocol_string(&mut table, ProtocolValue::String("roomID"))?,
+            store_id: get_protocol_string(&mut table, ProtocolValue::String("storeID"))?,
+            room_name: get_protocol_string(&mut table, ProtocolValue::String("roomName"))?,
+            mode_name: get_protocol_string(&mut table, ProtocolValue::String("modeName"))?,
+            password: get_protocol_string(&mut table, ProtocolValue::String("password"))?,
+            map_name: get_protocol_string(&mut table, ProtocolValue::String("mapName"))?,
+            match_started: get_protocol_bool(&mut table, ProtocolValue::String("matchStarted"))?,
+            switching_map: get_protocol_bool(&mut table, ProtocolValue::String("switchingmap"))?,
+            room_type: get_protocol_byte(&mut table, ProtocolValue::String("roomType"))?,
+            dedicated: get_protocol_bool(&mut table, ProtocolValue::String("dedicated"))?,
+            hardcore: get_protocol_bool(&mut table, ProtocolValue::String("hardcore"))?,
             allowed_weapons: {
                 // this is an array of 2 u32s, but we save this as a u64 because it makes more sense
-                let mut arr = get_u8_array(&mut table, ProtocolValue::String("allowedweapons"))?;
+                let mut arr = get_protocol_array(&mut table, ProtocolValue::String("allowedweapons"))?;
                 if arr.len() != 2 {
                     return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
                 }
@@ -56,13 +56,13 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
                 let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
                 int1 | (int2 << 32)
             },
-            mean_rank: get_u8_float(&mut table, ProtocolValue::String("meanRank"))?,
-            mean_kd: get_u8_float(&mut table, ProtocolValue::String("meanKD"))?,
-            average_rank: get_u8_int(&mut table, ProtocolValue::String("averagerank"))?,
-            event_code: get_u8_int(&mut table, ProtocolValue::String("eventcode"))?,
-            byte_252: get_u8_byte(&mut table, ProtocolValue::Byte(252))?,
-            byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253))?,
-            byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255))?,
+            mean_rank: get_protocol_float(&mut table, ProtocolValue::String("meanRank"))?,
+            mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
+            average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
+            event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
+            byte_252: get_protocol_byte(&mut table, ProtocolValue::Byte(252))?,
+            byte_253: get_protocol_bool(&mut table, ProtocolValue::Byte(253))?,
+            byte_255: get_protocol_byte(&mut table, ProtocolValue::Byte(255))?,
         });
 
         if ret.is_ok() && table.len() > 0 {
@@ -111,40 +111,40 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
 
     fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameProperties<'s>> {
         let ret = Ok(GameProperties {
-            spectate_for_mods_only: get_u8_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
-            max_ping: get_u8_short(&mut table, ProtocolValue::String("maxPing"))?,
-            banned_weapon_message: get_u8_string(&mut table, ProtocolValue::String("bannedweaponmessage"))?,
-            time_scale: get_u8_float(&mut table, ProtocolValue::String("timeScale"))?,
-            match_countdown_time: get_u8_float(&mut table, ProtocolValue::String("matchCountdownTime"))?,
-            round_started: get_u8_bool(&mut table, ProtocolValue::String("roundStarted"))?,
-            score_limit: get_u8_int(&mut table, ProtocolValue::String("scorelimit"))?,
-            gun_game_preset: get_u8_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
-            byte_249: get_u8_bool(&mut table, ProtocolValue::Byte(249)).ok(),
-            byte_250: get_u8_array(&mut table, ProtocolValue::Byte(250))
+            spectate_for_mods_only: get_protocol_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
+            max_ping: get_protocol_short(&mut table, ProtocolValue::String("maxPing"))?,
+            banned_weapon_message: get_protocol_string(&mut table, ProtocolValue::String("bannedweaponmessage"))?,
+            time_scale: get_protocol_float(&mut table, ProtocolValue::String("timeScale"))?,
+            match_countdown_time: get_protocol_float(&mut table, ProtocolValue::String("matchCountdownTime"))?,
+            round_started: get_protocol_bool(&mut table, ProtocolValue::String("roundStarted"))?,
+            score_limit: get_protocol_int(&mut table, ProtocolValue::String("scorelimit"))?,
+            gun_game_preset: get_protocol_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
+            byte_249: get_protocol_bool(&mut table, ProtocolValue::Byte(249)).ok(),
+            byte_250: get_protocol_array(&mut table, ProtocolValue::Byte(250))
                 .and_then(|x| {
                     Ok(x.into_iter()
                         .map(|protocol_val| unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::byte_250"))
                         .collect())
                 })
                 .ok(),
-            byte_253: get_u8_bool(&mut table, ProtocolValue::Byte(253)).ok(),
-            byte_254: get_u8_bool(&mut table, ProtocolValue::Byte(254)).ok(),
-            byte_255: get_u8_byte(&mut table, ProtocolValue::Byte(255)).ok(),
-            byte_248: get_u8_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
-            room_name: get_u8_string(&mut table, ProtocolValue::String("roomName"))?,
-            map_name: get_u8_string(&mut table, ProtocolValue::String("mapName"))?,
-            mode_name: get_u8_string(&mut table, ProtocolValue::String("modeName"))?,
-            password: get_u8_string(&mut table, ProtocolValue::String("password"))?,
-            hardcore: get_u8_bool(&mut table, ProtocolValue::String("hardcore"))?,
-            dedicated: get_u8_bool(&mut table, ProtocolValue::String("dedicated"))?,
-            match_started: get_u8_bool(&mut table, ProtocolValue::String("matchStarted"))?,
-            mean_kd: get_u8_float(&mut table, ProtocolValue::String("meanKD"))?,
-            mean_rank: get_u8_int(&mut table, ProtocolValue::String("meanRank"))?,
-            room_type: get_u8_byte(&mut table, ProtocolValue::String("roomType"))?,
-            switching_map: get_u8_bool(&mut table, ProtocolValue::String("switchingmap"))?,
+            byte_253: get_protocol_bool(&mut table, ProtocolValue::Byte(253)).ok(),
+            byte_254: get_protocol_bool(&mut table, ProtocolValue::Byte(254)).ok(),
+            byte_255: get_protocol_byte(&mut table, ProtocolValue::Byte(255)).ok(),
+            byte_248: get_protocol_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
+            room_name: get_protocol_string(&mut table, ProtocolValue::String("roomName"))?,
+            map_name: get_protocol_string(&mut table, ProtocolValue::String("mapName"))?,
+            mode_name: get_protocol_string(&mut table, ProtocolValue::String("modeName"))?,
+            password: get_protocol_string(&mut table, ProtocolValue::String("password"))?,
+            hardcore: get_protocol_bool(&mut table, ProtocolValue::String("hardcore"))?,
+            dedicated: get_protocol_bool(&mut table, ProtocolValue::String("dedicated"))?,
+            match_started: get_protocol_bool(&mut table, ProtocolValue::String("matchStarted"))?,
+            mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
+            mean_rank: get_protocol_int(&mut table, ProtocolValue::String("meanRank"))?,
+            room_type: get_protocol_byte(&mut table, ProtocolValue::String("roomType"))?,
+            switching_map: get_protocol_bool(&mut table, ProtocolValue::String("switchingmap"))?,
             allowed_weapons: {
                 // this is an array of 2 u32s, but we save this as a u64 because it makes more sense
-                let mut arr = get_u8_array(&mut table, ProtocolValue::String("allowedweapons"))?;
+                let mut arr = get_protocol_array(&mut table, ProtocolValue::String("allowedweapons"))?;
                 if arr.len() != 2 {
                     return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
                 }
@@ -152,11 +152,11 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
                 let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
                 int1 | (int2 << 32)
             },
-            event_code: get_u8_int(&mut table, ProtocolValue::String("eventcode"))?,
-            average_rank: get_u8_int(&mut table, ProtocolValue::String("averagerank"))?,
-            game_id: get_u8_string(&mut table, ProtocolValue::String("gameID"))?,
-            room_id: get_u8_string(&mut table, ProtocolValue::String("roomID"))?,
-            store_id: get_u8_string(&mut table, ProtocolValue::String("storeID"))?,
+            event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
+            average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
+            game_id: get_protocol_string(&mut table, ProtocolValue::String("gameID"))?,
+            room_id: get_protocol_string(&mut table, ProtocolValue::String("roomID"))?,
+            store_id: get_protocol_string(&mut table, ProtocolValue::String("storeID"))?,
         });
 
         if ret.is_ok() && table.len() > 0 {
@@ -233,7 +233,7 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProper
         if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
             return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
         }
-        let ret = Ok(PlayerProperties::NameOnly(get_u8_string(&mut table, ProtocolValue::Byte(255))?));
+        let ret = Ok(PlayerProperties::NameOnly(get_protocol_string(&mut table, ProtocolValue::Byte(255))?));
 
         // can't be hit, actually
         if ret.is_ok() && table.len() > 0 {

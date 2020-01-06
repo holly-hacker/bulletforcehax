@@ -123,18 +123,18 @@ impl<'s> Event<'s> {
             223 => err(Event::AuthEvent, &params),
             224 => err(Event::LobbyStats, &params),
             226 => Ok(Event::AppStats {
-                game_count: get_protocol_int(&mut params, ParameterCode::GameCount)?,
-                peer_count: get_protocol_int(&mut params, ParameterCode::PeerCount)?,
-                master_peer_count: get_protocol_int(&mut params, ParameterCode::MasterPeerCount)?,
+                game_count: get_u8_int(&mut params, ParameterCode::GameCount)?,
+                peer_count: get_u8_int(&mut params, ParameterCode::PeerCount)?,
+                master_peer_count: get_u8_int(&mut params, ParameterCode::MasterPeerCount)?,
             }),
             227 => err(Event::Match, &params),
             228 => err(Event::QueueState, &params),
-            229 => Ok(Event::GameListUpdate(GameInfo::new_from_hashtable_table(get_protocol_hashtable(
+            229 => Ok(Event::GameListUpdate(GameInfo::new_from_hashtable_table(get_u8_hashtable(
                 &mut params,
                 ParameterCode::GameList,
             )?)?)),
             230 => Ok(Event::GameList(
-                GameInfo::new_from_hashtable_table(get_protocol_hashtable(&mut params, ParameterCode::GameList)?).map(|mut table| {
+                GameInfo::new_from_hashtable_table(get_u8_hashtable(&mut params, ParameterCode::GameList)?).map(|mut table| {
                     table
                         .drain()
                         .map(|(_key, value)| value.expect("GameList packet contained removed game"))
@@ -150,14 +150,14 @@ impl<'s> Event<'s> {
             },
             254 => err(Event::Leave, &params),
             255 => Ok(Event::Join {
-                actor_list: get_protocol_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
+                actor_list: get_u8_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
                     protocol_array
                         .into_iter()
                         .map(|protocol_value| unwrap_protocol_int(protocol_value).expect("CreateGame response 2 had a non-int actor id"))
                         .collect()
                 })?,
-                actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
-                player_properties: PlayerProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+                actor_nr: get_u8_int(&mut params, ParameterCode::ActorNr)?,
+                player_properties: PlayerProperties::try_from(get_u8_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
             }),
             _ => Err(PacketReadError::UnknownEventType(event_type)),
         };
@@ -280,53 +280,53 @@ impl<'s> Operation<'s> {
             226 => err(Operation::JoinGame, &params),
             227 => match direction {
                 Direction::Send if !params.contains_key(&ParameterCode::GameProperties) => Ok(Operation::CreateGameRequest {
-                    room_name: get_protocol_string(&mut params, ParameterCode::RoomName)?,
+                    room_name: get_u8_string(&mut params, ParameterCode::RoomName)?,
                 }),
                 Direction::Send => Ok(Operation::CreateGameRequest2 {
-                    broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
-                    room_name: get_protocol_string(&mut params, ParameterCode::RoomName)?,
-                    game_properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
-                    player_properties: PlayerProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
-                    room_option_flags: get_protocol_int(&mut params, ParameterCode::RoomOptionFlags)?,
-                    cleanup_cache_on_leave: get_protocol_bool(&mut params, ParameterCode::CleanupCacheOnLeave)?,
-                    check_user_on_join: get_protocol_bool(&mut params, ParameterCode::CheckUserOnJoin)?,
+                    broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
+                    room_name: get_u8_string(&mut params, ParameterCode::RoomName)?,
+                    game_properties: GameProperties::try_from(get_u8_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                    player_properties: PlayerProperties::try_from(get_u8_hashtable(&mut params, ParameterCode::PlayerProperties)?)?,
+                    room_option_flags: get_u8_int(&mut params, ParameterCode::RoomOptionFlags)?,
+                    cleanup_cache_on_leave: get_u8_bool(&mut params, ParameterCode::CleanupCacheOnLeave)?,
+                    check_user_on_join: get_u8_bool(&mut params, ParameterCode::CheckUserOnJoin)?,
                 }),
                 Direction::Recv if !params.contains_key(&ParameterCode::GameProperties) => Ok(Operation::CreateGameResponse {
-                    room_name: get_protocol_string(&mut params, ParameterCode::RoomName)?,
-                    secret: get_protocol_string(&mut params, ParameterCode::Secret)?,
-                    address: get_protocol_string(&mut params, ParameterCode::Address)?,
+                    room_name: get_u8_string(&mut params, ParameterCode::RoomName)?,
+                    secret: get_u8_string(&mut params, ParameterCode::Secret)?,
+                    address: get_u8_string(&mut params, ParameterCode::Address)?,
                 }),
                 Direction::Recv => Ok(Operation::CreateGameResponse2 {
-                    actor_list: get_protocol_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
+                    actor_list: get_u8_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
                         protocol_array
                             .into_iter()
                             .map(|protocol_value| unwrap_protocol_int(protocol_value).expect("CreateGame response 2 had a non-int actor id"))
                             .collect()
                     })?,
-                    actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
-                    game_properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::GameProperties)?)?,
+                    actor_nr: get_u8_int(&mut params, ParameterCode::ActorNr)?,
+                    game_properties: GameProperties::try_from(get_u8_hashtable(&mut params, ParameterCode::GameProperties)?)?,
                 }),
             },
             228 => err(Operation::LeaveLobby, &params),
             229 => Ok(Operation::JoinLobby()),
             230 => match direction {
                 Direction::Send if params.contains_key(&ParameterCode::Secret) => Ok(Operation::AuthenticateRequest2 {
-                    secret: get_protocol_string(&mut params, ParameterCode::Secret)?,
+                    secret: get_u8_string(&mut params, ParameterCode::Secret)?,
                 }),
                 Direction::Send => Ok(Operation::AuthenticateRequest {
-                    app_version: get_protocol_string(&mut params, ParameterCode::AppVersion)?,
-                    application_id: get_protocol_string(&mut params, ParameterCode::ApplicationId)?,
-                    region: get_protocol_string(&mut params, ParameterCode::Region)?,
+                    app_version: get_u8_string(&mut params, ParameterCode::AppVersion)?,
+                    application_id: get_u8_string(&mut params, ParameterCode::ApplicationId)?,
+                    region: get_u8_string(&mut params, ParameterCode::Region)?,
                 }),
                 Direction::Recv if params.contains_key(&ParameterCode::Position) => Ok(Operation::AuthenticateResponse2 {
-                    secret: get_protocol_string(&mut params, ParameterCode::Secret)?,
-                    position: get_protocol_int(&mut params, ParameterCode::Position)?,
+                    secret: get_u8_string(&mut params, ParameterCode::Secret)?,
+                    position: get_u8_int(&mut params, ParameterCode::Position)?,
                 }),
                 Direction::Recv => Ok(Operation::AuthenticateResponse {
-                    unknown: get_protocol_string(&mut params, 196)?, // TODO: [243, 3, 230, 0, 0, 42, 0, 0]
-                    secret: get_protocol_string(&mut params, ParameterCode::Secret)?,
-                    address: get_protocol_string(&mut params, ParameterCode::Address)?,
-                    user_id: get_protocol_string(&mut params, ParameterCode::UserId)?,
+                    unknown: get_u8_string(&mut params, 196)?, // TODO: [243, 3, 230, 0, 0, 42, 0, 0]
+                    secret: get_u8_string(&mut params, ParameterCode::Secret)?,
+                    address: get_u8_string(&mut params, ParameterCode::Address)?,
+                    user_id: get_u8_string(&mut params, ParameterCode::UserId)?,
                 }),
             },
             231 => err(Operation::AuthenticateOnce, &params),
@@ -335,9 +335,9 @@ impl<'s> Operation<'s> {
             251 => err(Operation::GetProperties, &params),
             252 if params.len() == 0 => Ok(Operation::SetPropertiesEmpty()),
             252 if params.contains_key(&ParameterCode::ActorNr) => Ok(Operation::SetPropertiesActor {
-                broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
-                actor_nr: get_protocol_int(&mut params, ParameterCode::ActorNr)?,
-                properties: get_protocol_hashtable(&mut params, ParameterCode::Properties)?,
+                broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
+                actor_nr: get_u8_int(&mut params, ParameterCode::ActorNr)?,
+                properties: get_u8_hashtable(&mut params, ParameterCode::Properties)?,
             }),
             252 if params // TODO: super ugly!
                 .get(&ParameterCode::Properties)
@@ -349,13 +349,13 @@ impl<'s> Operation<'s> {
                 .is_some() =>
             {
                 Ok(Operation::SetPropertiesGame {
-                    broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
-                    properties: GameProperties::try_from(get_protocol_hashtable(&mut params, ParameterCode::Properties)?)?,
+                    broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
+                    properties: GameProperties::try_from(get_u8_hashtable(&mut params, ParameterCode::Properties)?)?,
                 })
             }
             252 => Ok(Operation::SetPropertiesUnknown {
-                broadcast: get_protocol_bool(&mut params, ParameterCode::Broadcast)?,
-                properties: get_protocol_hashtable(&mut params, ParameterCode::Properties)?,
+                broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
+                properties: get_u8_hashtable(&mut params, ParameterCode::Properties)?,
             }),
             253 => err(Operation::RaiseEvent, &params),
             254 => err(Operation::Leave, &params),
@@ -539,11 +539,11 @@ impl<'s> InternalOperation {
             0 => err(InternalOperation::InitEncryption, &params),
             1 => match direction {
                 Direction::Send => Ok(InternalOperation::PingRequest {
-                    local_time: get_protocol_int(&mut params, 1)?,
+                    local_time: get_u8_int(&mut params, 1)?,
                 }),
                 Direction::Recv => Ok(InternalOperation::PingResponse {
-                    local_time: get_protocol_int(&mut params, 1)?,
-                    server_time: get_protocol_int(&mut params, 2)?,
+                    local_time: get_u8_int(&mut params, 1)?,
+                    server_time: get_u8_int(&mut params, 2)?,
                 }),
             },
             _ => Err(PacketReadError::UnknownInternalOperationType(operation_type)),

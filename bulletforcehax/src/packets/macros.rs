@@ -13,7 +13,7 @@ macro_rules! gen_protocol_type_functions {
             }
 
             #[allow(dead_code)]
-            pub fn [<get_u8_ $type_name>]<'a>(
+            pub fn [<get_protocol_ $type_name>]<'a>(
                 map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
                 key: ProtocolValue<'static>,
             ) -> PacketReadResult<$type> {
@@ -27,7 +27,7 @@ macro_rules! gen_protocol_type_functions {
             }
 
             #[allow(dead_code)]
-            pub fn [<get_protocol_ $type_name>]<'a>(map: &mut HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<$type> {
+            pub fn [<get_u8_ $type_name>]<'a>(map: &mut HashMap<u8, ProtocolValue<'a>>, param_code: u8) -> PacketReadResult<$type> {
                 match map.remove(&param_code) {
                     Some(val) => Ok([<unwrap_protocol_ $type_name>](val)?),
                     None => {
