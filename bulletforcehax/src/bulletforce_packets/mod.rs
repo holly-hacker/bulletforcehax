@@ -21,23 +21,33 @@ pub enum Packet<'a> {
 
 #[derive(Debug)]
 pub enum Event<'a> {
+    /// Only when hosted with Azure, now obsolete
     AzureNodeInfo,
+    /// Sent to update token
     AuthEvent,
+    /// Contains list of lobbies with player and game counts
     LobbyStats,
+    /// Stats such as game, peer and master peer count
     AppStats {
         game_count: u32,
         peer_count: u32,
         master_peer_count: u32,
     },
+    /// Unused
     Match,
+    /// Unused
     QueueState,
+    /// Update to game list
     GameListUpdate(HashMap<&'a str, Option<GameInfo<'a>>>),
+    /// Initial game list
     GameList(Vec<GameInfo<'a>>),
     CacheSliceChanged,
     ErrorInfo,
+    /// Used to update broadcasted properties
     PropertiesChanged,
-    SetProperties,
+    /// Player leaves the game
     Leave,
+    /// Player joins the game
     Join {
         actor_nr: u32,
         player_properties: PlayerProperties<'a>,
@@ -47,11 +57,15 @@ pub enum Event<'a> {
 
 #[derive(Debug)]
 pub enum Operation<'a> {
+    /// Used to get game list with SQL filter
     GetGameList,
+    /// Changes server settings
     ServerSettings,
     WebRpc,
+    /// Gets a list of region servers
     GetRegions,
     GetLobbyStats,
+    /// Request room and online status from friend by name
     FindFriends,
     CancelJoinRandom,
     JoinRandomGame,
@@ -113,11 +127,12 @@ pub enum Operation<'a> {
         actor_nr: u32,
     },
     SetPropertiesEmpty(),
-    /// when props only contains `byte_254: bool`
+    /// when props only contains `is_visible: bool`
     SetPropertiesUnknown {
         broadcast: bool,
         properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
     },
+    /// Raise an event for other actors in the room
     RaiseEvent,
     Leave,
     Join,
@@ -156,15 +171,18 @@ pub struct GameInfo<'a> {
     average_rank: u32,
     event_code: u32,
 
-    // byte_251: bool, mentions whether this game got removed. either this or the other fields are present
-    byte_252: u8,
-    byte_253: bool,
-    byte_255: u8,
+    // byte_251: bool, is_removed, either this or all other fields are present
+    /// Current players in the room
+    player_count: u8, // 252
+    /// Allow other players to join
+    is_open: bool, // 253
+    /// Max players that fit in this room. 0 for unlimited.
+    max_players: u8, // 255
 }
 
 #[derive(Debug, PartialEq)]
 pub struct GameProperties<'a> {
-    // shared with GameInfo, names are contained in byte_250
+    // shared with GameInfo, names are contained in props_listed_in_lobby
     game_id: &'a str,
     room_id: &'a str,
     store_id: &'a str,
@@ -193,15 +211,16 @@ pub struct GameProperties<'a> {
     score_limit: u32,
     gun_game_preset: u32,
 
-    // byte_* options below not present in Operation::SetProperties
-    byte_249: Option<bool>,
+    // options below not present in Operation::SetProperties
+    cleanup_cache_on_leave: Option<bool>, // 249
     /// List of some fields that are present in this struct, which don't seem to be present in GameInfo
-    byte_250: Option<Vec<&'a str>>,
-    byte_253: Option<bool>,
-    byte_254: Option<bool>,
-    byte_255: Option<u8>,
+    props_listed_in_lobby: Option<Vec<&'a str>>, // 250
+    is_open: Option<bool>,                // 253
+    /// Is room visible in lobby
+    is_visible: Option<bool>, // 254
+    max_players: Option<u8>,              // 255
     /// Only present in Operation::CreateGame* response
-    byte_248: Option<u32>,
+    master_client_id: Option<u32>, // 248
 }
 
 #[derive(Debug, PartialEq)]

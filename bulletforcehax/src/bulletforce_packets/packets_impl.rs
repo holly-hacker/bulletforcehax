@@ -18,7 +18,7 @@ impl Packet<'_> {
                 return_code,
                 debug_string,
             )),
-            PhotonPacket::Event(packet_type, params) => Ok(Packet::Event(Event::read(packet_type, params, direction)?)),
+            PhotonPacket::Event(packet_type, params) => Ok(Packet::Event(Event::read(packet_type, params)?)),
             PhotonPacket::InternalOperationRequest(packet_type, params) => {
                 Ok(Packet::InternalOperationRequest(InternalOperation::read(packet_type, params, direction)?))
             }
@@ -48,7 +48,7 @@ impl Packet<'_> {
 }
 
 impl<'s> Event<'s> {
-    pub fn read<'a>(event_type: u8, mut params: ParameterTable<'a>, direction: Direction) -> PacketReadResult<Event<'a>> {
+    pub fn read<'a>(event_type: u8, mut params: ParameterTable<'a>) -> PacketReadResult<Event<'a>> {
         fn err<'a>(event: Event<'static>, params: &HashMap<u8, ProtocolValue>) -> PacketReadResult<Event<'a>> {
             debug!("Unimplemented Event: {:?}, {:#?}", event, params);
             Err(PacketReadError::UnimplementedEventType(event))
@@ -79,10 +79,7 @@ impl<'s> Event<'s> {
             )),
             250 => err(Event::CacheSliceChanged, &params),
             251 => err(Event::ErrorInfo, &params),
-            253 => match direction {
-                Direction::Send => err(Event::SetProperties, &params),
-                Direction::Recv => err(Event::PropertiesChanged, &params),
-            },
+            253 => err(Event::PropertiesChanged, &params),
             254 => err(Event::Leave, &params),
             255 => Ok(Event::Join {
                 actor_list: get_u8_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
@@ -116,7 +113,6 @@ impl<'s> Event<'s> {
             Event::GameList(_) => 230,
             Event::CacheSliceChanged => 250,
             Event::ErrorInfo => 251,
-            Event::SetProperties => 253,
             Event::PropertiesChanged => 253,
             Event::Leave => 254,
             Event::Join { .. } => 255,
@@ -167,7 +163,6 @@ impl<'s> Event<'s> {
             }),
             Event::CacheSliceChanged => err(Event::CacheSliceChanged),
             Event::ErrorInfo => err(Event::ErrorInfo),
-            Event::SetProperties => err(Event::SetProperties),
             Event::PropertiesChanged => err(Event::PropertiesChanged),
             Event::Leave => err(Event::Leave),
             Event::Join {

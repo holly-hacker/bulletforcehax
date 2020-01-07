@@ -25,9 +25,9 @@ mod packets_payload_tests {
                 mean_kd: 2.,
                 average_rank: 1337,
                 event_code: 0,
-                byte_253: false,
-                byte_255: 2,
-                byte_252: 1,
+                is_open: false,
+                max_players: 2,
+                player_count: 1,
             }
         }
 
@@ -60,8 +60,8 @@ mod packets_payload_tests {
                 mean_kd: 2.,
                 average_rank: 1337,
                 event_code: 0,
-                byte_253: Some(false),
-                byte_255: Some(2),
+                is_open: Some(false),
+                max_players: Some(2),
 
                 spectate_for_mods_only: false,
                 max_ping: 123,
@@ -71,10 +71,10 @@ mod packets_payload_tests {
                 round_started: false,
                 score_limit: 123,
                 gun_game_preset: 2,
-                byte_249: Some(false),
-                byte_250: Some(vec!["1", "2", "", "asd"]),
-                byte_254: Some(true),
-                byte_248: None,
+                cleanup_cache_on_leave: Some(false),
+                props_listed_in_lobby: Some(vec!["1", "2", "", "asd"]),
+                is_visible: Some(true),
+                master_client_id: None,
             }
         }
 

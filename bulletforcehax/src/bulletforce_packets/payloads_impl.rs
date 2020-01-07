@@ -61,9 +61,9 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
             mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
             average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
             event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
-            byte_252: get_protocol_byte(&mut table, ProtocolValue::Byte(252))?,
-            byte_253: get_protocol_bool(&mut table, ProtocolValue::Byte(253))?,
-            byte_255: get_protocol_byte(&mut table, ProtocolValue::Byte(255))?,
+            player_count: get_protocol_byte(&mut table, ProtocolValue::Byte(252))?,
+            is_open: get_protocol_bool(&mut table, ProtocolValue::Byte(253))?,
+            max_players: get_protocol_byte(&mut table, ProtocolValue::Byte(255))?,
         });
 
         if ret.is_ok() && !table.is_empty() {
@@ -106,9 +106,9 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
         map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
         map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
         map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
-        map.insert(ProtocolValue::Byte(252), ProtocolValue::Byte(self.byte_252));
-        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.byte_253));
-        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.byte_255));
+        map.insert(ProtocolValue::Byte(252), ProtocolValue::Byte(self.player_count));
+        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.is_open));
+        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.max_players));
         map
     }
 }
@@ -126,18 +126,20 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
             round_started: get_protocol_bool(&mut table, ProtocolValue::String("roundStarted"))?,
             score_limit: get_protocol_int(&mut table, ProtocolValue::String("scorelimit"))?,
             gun_game_preset: get_protocol_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
-            byte_249: get_protocol_bool(&mut table, ProtocolValue::Byte(249)).ok(),
-            byte_250: get_protocol_array(&mut table, ProtocolValue::Byte(250))
+            cleanup_cache_on_leave: get_protocol_bool(&mut table, ProtocolValue::Byte(249)).ok(),
+            props_listed_in_lobby: get_protocol_array(&mut table, ProtocolValue::Byte(250))
                 .and_then(|x| {
                     Ok(x.into_iter()
-                        .map(|protocol_val| unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::byte_250"))
+                        .map(|protocol_val| {
+                            unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::props_listed_in_lobby")
+                        })
                         .collect())
                 })
                 .ok(),
-            byte_253: get_protocol_bool(&mut table, ProtocolValue::Byte(253)).ok(),
-            byte_254: get_protocol_bool(&mut table, ProtocolValue::Byte(254)).ok(),
-            byte_255: get_protocol_byte(&mut table, ProtocolValue::Byte(255)).ok(),
-            byte_248: get_protocol_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
+            is_open: get_protocol_bool(&mut table, ProtocolValue::Byte(253)).ok(),
+            is_visible: get_protocol_bool(&mut table, ProtocolValue::Byte(254)).ok(),
+            max_players: get_protocol_byte(&mut table, ProtocolValue::Byte(255)).ok(),
+            master_client_id: get_protocol_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
             room_name: get_protocol_string(&mut table, ProtocolValue::String("roomName"))?,
             map_name: get_protocol_string(&mut table, ProtocolValue::String("mapName"))?,
             mode_name: get_protocol_string(&mut table, ProtocolValue::String("modeName"))?,
@@ -194,17 +196,19 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<
         map.insert(ProtocolValue::String("roundStarted"), ProtocolValue::Bool(self.round_started));
         map.insert(ProtocolValue::String("scorelimit"), ProtocolValue::Integer(self.score_limit));
         map.insert(ProtocolValue::String("gunGamePreset"), ProtocolValue::Integer(self.gun_game_preset));
-        self.byte_249.and_then(|b| map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(b)));
-        self.byte_250.and_then(|b| {
+        self.cleanup_cache_on_leave
+            .and_then(|b| map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(b)));
+        self.props_listed_in_lobby.and_then(|b| {
             map.insert(
                 ProtocolValue::Byte(250),
                 ProtocolValue::Array(b.into_iter().map(|s| ProtocolValue::String(s)).collect()),
             )
         });
-        self.byte_253.and_then(|b| map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(b)));
-        self.byte_254.and_then(|b| map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(b)));
-        self.byte_255.and_then(|b| map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(b)));
-        self.byte_248
+        self.is_open.and_then(|b| map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(b)));
+        self.is_visible.and_then(|b| map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(b)));
+        self.max_players
+            .and_then(|b| map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(b)));
+        self.master_client_id
             .and_then(|b| map.insert(ProtocolValue::Byte(248), ProtocolValue::Integer(b)));
         map.insert(ProtocolValue::String("roomName"), ProtocolValue::String(self.room_name));
         map.insert(ProtocolValue::String("mapName"), ProtocolValue::String(self.map_name));
