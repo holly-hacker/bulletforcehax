@@ -125,10 +125,12 @@ mod writing_protocol_types_tests {
     }
 
     #[test]
-    #[ignore = "ObjectArray not yet implemented"]
     fn can_write_object_array() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
-        // write_value_of_type(writer, ProtocolValue::ObjectArray(["abc", null, s16(0x123)])?;
+        write_value_of_type(
+            writer,
+            ProtocolValue::ObjectArray(vec![ProtocolValue::String("abc"), ProtocolValue::Null(), ProtocolValue::Short(0x123)]),
+        )?;
         assert_eq!(writer, &vec![122, 0, 3, 115, 0, 3, 0x61, 0x62, 0x63, 42, 107, 0x01, 0x23]);
         Ok(())
     }
