@@ -235,12 +235,13 @@ impl<'s> Operation<'s> {
                     application_id: get_u8_string(&mut params, ParameterCode::ApplicationId)?,
                     region: get_u8_string(&mut params, ParameterCode::Region)?,
                 }),
+                Direction::Recv if params.is_empty() => Ok(Operation::AuthenticateResponseEmpty()),
                 Direction::Recv if params.contains_key(&ParameterCode::Position) => Ok(Operation::AuthenticateResponse2 {
                     secret: get_u8_string(&mut params, ParameterCode::Secret)?,
                     position: get_u8_int(&mut params, ParameterCode::Position)?,
                 }),
                 Direction::Recv => Ok(Operation::AuthenticateResponse {
-                    unknown: get_u8_string(&mut params, 196)?, // TODO: [243, 3, 230, 0, 0, 42, 0, 0]
+                    unknown: get_u8_string(&mut params, 196)?,
                     secret: get_u8_string(&mut params, ParameterCode::Secret)?,
                     address: get_u8_string(&mut params, ParameterCode::Address)?,
                     user_id: get_u8_string(&mut params, ParameterCode::UserId)?,
@@ -250,7 +251,7 @@ impl<'s> Operation<'s> {
             248 => err(Operation::ChangeGroups, &params),
             250 => err(Operation::ExchangeKeysForEncryption, &params),
             251 => err(Operation::GetProperties, &params),
-            252 if !params.is_empty() => Ok(Operation::SetPropertiesEmpty()),
+            252 if params.is_empty() => Ok(Operation::SetPropertiesEmpty()),
             252 if params.contains_key(&ParameterCode::ActorNr) => Ok(Operation::SetPropertiesActor {
                 broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
                 actor_nr: get_u8_int(&mut params, ParameterCode::ActorNr)?,
@@ -308,6 +309,7 @@ impl<'s> Operation<'s> {
             Operation::AuthenticateResponse { .. } => 230,
             Operation::AuthenticateRequest2 { .. } => 230,
             Operation::AuthenticateResponse2 { .. } => 230,
+            Operation::AuthenticateResponseEmpty() => 230,
             Operation::AuthenticateOnce => 231,
             Operation::ChangeGroups => 248,
             Operation::ExchangeKeysForEncryption => 250,
@@ -399,6 +401,7 @@ impl<'s> Operation<'s> {
                 ParameterCode::Secret => ProtocolValue::String(secret),
                 ParameterCode::Position => ProtocolValue::Integer(position),
             }),
+            Operation::AuthenticateResponseEmpty() => Ok(hashmap!()),
             Operation::AuthenticateOnce => err(Operation::AuthenticateOnce),
             Operation::ChangeGroups => err(Operation::ChangeGroups),
             Operation::ExchangeKeysForEncryption => err(Operation::ExchangeKeysForEncryption),

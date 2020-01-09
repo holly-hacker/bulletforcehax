@@ -112,6 +112,7 @@ pub enum Operation<'a> {
         secret: &'a str,
         position: u32,
     },
+    AuthenticateResponseEmpty(),
     AuthenticateOnce,
     ChangeGroups,
     ExchangeKeysForEncryption,
