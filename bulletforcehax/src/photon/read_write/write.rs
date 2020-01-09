@@ -1,3 +1,6 @@
+#![allow(clippy::float_cmp)]
+#![allow(clippy::many_single_char_names)] // required because of quaternion
+
 use byteorder::{BigEndian, WriteBytesExt};
 use std::io::Write;
 
@@ -16,7 +19,7 @@ fn get_value_type(value: &ProtocolValue) -> u8 {
         ProtocolValue::Dictionary => 68,
         ProtocolValue::StringArray(_) => 97,
         ProtocolValue::Byte(_) => 98,
-        ProtocolValue::Custom => 99,
+        ProtocolValue::Custom(_) => 99,
         ProtocolValue::Double(_) => 100,
         ProtocolValue::EventData => 101,
         ProtocolValue::Float(_) => 102,
@@ -111,7 +114,38 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
         ProtocolValue::EventData => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
         ProtocolValue::OperationResponse => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationResponse)),
         ProtocolValue::OperationRequest => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::OperationRequest)),
-        ProtocolValue::Custom => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
+        ProtocolValue::Custom(custom) => {
+            match custom {
+                CustomType::Vector2(x, y) => {
+                    c.write_u8(b'W')?;
+                    c.write_f32::<BigEndian>(x)?;
+                    c.write_f32::<BigEndian>(y)?;
+                }
+                CustomType::Vector3(x, y, z) => {
+                    c.write_u8(b'V')?;
+                    c.write_f32::<BigEndian>(x)?;
+                    c.write_f32::<BigEndian>(y)?;
+                    c.write_f32::<BigEndian>(z)?;
+                }
+                CustomType::Quaternion(x, y, z, w) => {
+                    c.write_u8(b'Q')?;
+                    c.write_f32::<BigEndian>(x)?;
+                    c.write_f32::<BigEndian>(y)?;
+                    c.write_f32::<BigEndian>(z)?;
+                    c.write_f32::<BigEndian>(w)?;
+                }
+                CustomType::Player(id) => {
+                    c.write_u8(b'P')?;
+                    c.write_u32::<BigEndian>(id)?;
+                }
+                CustomType::Custom { id, data } => {
+                    c.write_u8(id)?;
+                    c.write_u16::<BigEndian>(data.len() as u16)?;
+                    c.write_all(data.as_slice())?;
+                }
+            }
+            Ok(())
+        }
     }
 }
 

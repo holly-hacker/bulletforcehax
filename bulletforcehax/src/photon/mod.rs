@@ -80,7 +80,20 @@ pub enum ProtocolValue<'a> {
     Dictionary,
     /// hashmap of arbitrary types, `Hashtable` or `Dictionary<object, object>` in C#
     Hashtable(HashMap<ProtocolValue<'a>, ProtocolValue<'a>>),
-    Custom,
+    Custom(CustomType),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum CustomType {
+    Vector2(f32, f32),
+    Vector3(f32, f32, f32),
+    Quaternion(f32, f32, f32, f32),
+    /// Contains a players ActorNumber
+    Player(u32),
+    Custom {
+        id: u8,
+        data: Vec<u8>,
+    },
 }
 
 // this may not work, I'm not sure yet

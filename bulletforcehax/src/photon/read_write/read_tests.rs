@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp)]
+
 #[cfg(test)]
 mod reading_protocol_types_tests {
     use super::super::super::*;
@@ -163,10 +165,94 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    #[ignore = "Custom not yet implemented"]
-    fn can_read_custom() -> PhotonReadResult<()> {
-        let reader = &mut Cursor::new([99, 42, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
-        let _t = read_value(reader)?;
+    fn can_read_vec2_custom() -> PhotonReadResult<()> {
+        let reader = &mut Cursor::new([99, 0x57, 0x3f, 0x80, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
+        let x = read_value(reader)?;
+        match x {
+            ProtocolValue::Custom(t) => match t {
+                CustomType::Vector2(x, y) => {
+                    assert_eq!(x, 1.);
+                    assert_eq!(y, 13.37);
+                }
+                _ => panic!("Read wrong custom type: {:?}", t),
+            },
+            _ => panic!("Read wrong protocol type: {:?}", x),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_read_vec3_custom() -> PhotonReadResult<()> {
+        let reader = &mut Cursor::new([99, 0x56, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
+        let x = read_value(reader)?;
+        match x {
+            ProtocolValue::Custom(t) => match t {
+                CustomType::Vector3(x, y, z) => {
+                    assert_eq!(x, 1.);
+                    assert_eq!(y, 0.);
+                    assert_eq!(z, 13.37);
+                }
+                _ => panic!("Read wrong custom type: {:?}", t),
+            },
+            _ => panic!("Read wrong protocol type: {:?}", x),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_read_quaternion_custom() -> PhotonReadResult<()> {
+        let reader = &mut Cursor::new(
+            [
+                99, 0x51, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85, 0x41, 0x80, 0x00, 0x00,
+            ]
+            .as_ref(),
+        );
+        let x = read_value(reader)?;
+        match x {
+            ProtocolValue::Custom(t) => match t {
+                CustomType::Quaternion(x, y, z, w) => {
+                    assert_eq!(x, 1.);
+                    assert_eq!(y, 0.);
+                    assert_eq!(z, 13.37);
+                    assert_eq!(w, 16.);
+                }
+                _ => panic!("Read wrong custom type: {:?}", t),
+            },
+            _ => panic!("Read wrong protocol type: {:?}", x),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_read_player_custom() -> PhotonReadResult<()> {
+        let reader = &mut Cursor::new([99, 0x50, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
+        let x = read_value(reader)?;
+        match x {
+            ProtocolValue::Custom(t) => match t {
+                CustomType::Player(id) => {
+                    assert_eq!(id, 0xDEADBEEF);
+                }
+                _ => panic!("Read wrong custom type: {:?}", t),
+            },
+            _ => panic!("Read wrong protocol type: {:?}", x),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_read_other_custom() -> PhotonReadResult<()> {
+        let reader = &mut Cursor::new([99, 15, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
+        let x = read_value(reader)?;
+        match x {
+            ProtocolValue::Custom(t) => match t {
+                CustomType::Custom { id, data } => {
+                    assert_eq!(id, 15);
+                    assert_eq!(data, vec![0xDE, 0xAD, 0xBE, 0xEF]);
+                }
+                _ => panic!("Read wrong custom type: {:?}", t),
+            },
+            _ => panic!("Read wrong protocol type: {:?}", x),
+        }
         Ok(())
     }
 }

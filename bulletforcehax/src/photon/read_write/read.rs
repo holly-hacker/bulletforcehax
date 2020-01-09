@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use std::collections::HashMap;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 
 use super::super::*;
 
@@ -35,7 +35,26 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
             Ok(ProtocolValue::StringArray(vec))
         }
         98 => Ok(ProtocolValue::Byte(c.read_u8()?)),
-        99 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
+        99 => {
+            let id = c.read_u8()?;
+            Ok(ProtocolValue::Custom(match id {
+                b'W' => CustomType::Vector2(c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?),
+                b'V' => CustomType::Vector3(c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?),
+                b'Q' => CustomType::Quaternion(
+                    c.read_f32::<BigEndian>()?,
+                    c.read_f32::<BigEndian>()?,
+                    c.read_f32::<BigEndian>()?,
+                    c.read_f32::<BigEndian>()?,
+                ),
+                b'P' => CustomType::Player(c.read_u32::<BigEndian>()?),
+                _ => {
+                    let len = c.read_u16::<BigEndian>()?;
+                    let mut data = vec![0; len as usize];
+                    c.read_exact(data.as_mut_slice())?;
+                    CustomType::Custom { id, data }
+                }
+            }))
+        }
         100 => Ok(ProtocolValue::Double(c.read_f64::<BigEndian>()?)),
         101 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
         102 => Ok(ProtocolValue::Float(c.read_f32::<BigEndian>()?)),
