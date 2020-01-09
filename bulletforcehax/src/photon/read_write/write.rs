@@ -14,7 +14,7 @@ fn get_value_type(value: &ProtocolValue) -> u8 {
     match value {
         ProtocolValue::Null() => 42,
         ProtocolValue::Dictionary => 68,
-        ProtocolValue::StringArray => 97,
+        ProtocolValue::StringArray(_) => 97,
         ProtocolValue::Byte(_) => 98,
         ProtocolValue::Custom => 99,
         ProtocolValue::Double(_) => 100,
@@ -24,12 +24,12 @@ fn get_value_type(value: &ProtocolValue) -> u8 {
         ProtocolValue::Integer(_) => 105,
         ProtocolValue::Short(_) => 107,
         ProtocolValue::Long(_) => 108,
-        ProtocolValue::IntegerArray => 110,
+        ProtocolValue::IntegerArray(_) => 110,
         ProtocolValue::Bool(_) => 111,
         ProtocolValue::OperationResponse => 112,
         ProtocolValue::OperationRequest => 113,
         ProtocolValue::String(_) => 115,
-        ProtocolValue::ByteArray => 120,
+        ProtocolValue::ByteArray(_) => 120,
         ProtocolValue::Array(_) => 121,
         ProtocolValue::ObjectArray(_) => 122,
     }
@@ -57,9 +57,26 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
             c.write_u16::<BigEndian>(bytes.len() as u16)?;
             Ok(c.write_all(bytes)?)
         }
-        ProtocolValue::ByteArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::ByteArray)),
-        ProtocolValue::IntegerArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::IntegerArray)),
-        ProtocolValue::StringArray => Err(PhotonWriteError::UnimplementedProtocolValueType(ProtocolValue::StringArray)),
+        ProtocolValue::ByteArray(bytes) => {
+            c.write_u32::<BigEndian>(bytes.len() as u32)?;
+            Ok(c.write_all(bytes.as_slice())?)
+        }
+        ProtocolValue::IntegerArray(ints) => {
+            c.write_u32::<BigEndian>(ints.len() as u32)?;
+            for i in ints {
+                c.write_u32::<BigEndian>(i)?;
+            }
+            Ok(())
+        }
+        ProtocolValue::StringArray(strings) => {
+            c.write_u16::<BigEndian>(strings.len() as u16)?;
+            for s in strings {
+                let bytes = s.as_bytes(); // as utf8 bytes
+                c.write_u16::<BigEndian>(bytes.len() as u16)?;
+                c.write_all(bytes)?;
+            }
+            Ok(())
+        }
         ProtocolValue::Array(x) => {
             c.write_u16::<BigEndian>(x.len() as u16)?;
             // if we hit this, we may need to implement returning an empty array of nulls

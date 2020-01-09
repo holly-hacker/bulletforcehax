@@ -98,32 +98,29 @@ mod reading_protocol_types_tests {
     }
 
     #[test]
-    #[ignore = "ByteArray not yet implemented"]
     fn can_read_byte_array() -> PhotonReadResult<()> {
         let reader = &mut Cursor::new([120, 0, 0, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
-        let _t = read_value(reader)?;
+        let t = read_value(reader)?;
 
-        // assert_eq!(t, ProtocolValue::ByteArray([0xDE, 0xAD, 0xBE, 0xEF]));
+        assert_eq!(t, ProtocolValue::ByteArray(vec![0xDE, 0xAD, 0xBE, 0xEF]));
         Ok(())
     }
 
     #[test]
-    #[ignore = "IntArray not yet implemented"]
     fn can_read_int_array() -> PhotonReadResult<()> {
         let reader = &mut Cursor::new([110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE].as_ref());
-        let _t = read_value(reader)?;
+        let t = read_value(reader)?;
 
-        // assert_eq!(t, ProtocolValue::IntArray([-559038737, -889275714]));
+        assert_eq!(t, ProtocolValue::IntegerArray(vec![-559038737 as i32 as u32, -889275714 as i32 as u32]));
         Ok(())
     }
 
     #[test]
-    #[ignore = "StringArray not yet implemented"]
     fn can_read_string_array() -> PhotonReadResult<()> {
         let reader = &mut Cursor::new([97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0].as_ref());
-        let _t = read_value(reader)?;
+        let t = read_value(reader)?;
 
-        // assert_eq!(t, ProtocolValue::StringArray(["abc", ""]));
+        assert_eq!(t, ProtocolValue::StringArray(vec!["abc", ""]));
         Ok(())
     }
 

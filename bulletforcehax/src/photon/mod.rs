@@ -73,9 +73,9 @@ pub enum ProtocolValue<'a> {
     Array(Vec<ProtocolValue<'a>>),
     /// array of arbitrary types
     ObjectArray(Vec<ProtocolValue<'a>>),
-    ByteArray,
-    StringArray,
-    IntegerArray,
+    ByteArray(Vec<u8>),
+    StringArray(Vec<&'a str>),
+    IntegerArray(Vec<u32>),
     /// hashmap of predefined types, `IDictionary/Dictionary<T1, T2>` in C#
     Dictionary,
     /// hashmap of arbitrary types, `Hashtable` or `Dictionary<object, object>` in C#

@@ -21,7 +21,19 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
     match protocol_type {
         42 => Ok(ProtocolValue::Null()),
         68 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::Dictionary)),
-        97 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::StringArray)),
+        97 => {
+            let len = c.read_u16::<BigEndian>()? as usize;
+            let mut vec = Vec::new();
+            for _ in 0..len {
+                let len = c.read_u16::<BigEndian>()? as usize;
+                let pos = c.position() as usize;
+                let return_slice = &(*c.get_ref())[pos..pos + len];
+                c.set_position((pos + len) as u64);
+                let str_slice = std::str::from_utf8(return_slice)?;
+                vec.push(str_slice);
+            }
+            Ok(ProtocolValue::StringArray(vec))
+        }
         98 => Ok(ProtocolValue::Byte(c.read_u8()?)),
         99 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::Custom)),
         100 => Ok(ProtocolValue::Double(c.read_f64::<BigEndian>()?)),
@@ -31,7 +43,14 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
         105 => Ok(ProtocolValue::Integer(c.read_u32::<BigEndian>()?)),
         107 => Ok(ProtocolValue::Short(c.read_u16::<BigEndian>()?)),
         108 => Ok(ProtocolValue::Long(c.read_u64::<BigEndian>()?)),
-        110 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::IntegerArray)),
+        110 => {
+            let len = c.read_u32::<BigEndian>()? as usize;
+            let mut vec = Vec::new();
+            for _ in 0..len {
+                vec.push(c.read_u32::<BigEndian>()?);
+            }
+            Ok(ProtocolValue::IntegerArray(vec))
+        }
         111 => Ok(ProtocolValue::Bool(c.read_u8()? != 0)),
         112 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::OperationResponse)),
         113 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::OperationRequest)),
@@ -44,7 +63,14 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
             let str_slice = std::str::from_utf8(return_slice)?;
             Ok(ProtocolValue::String(str_slice))
         }
-        120 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::ByteArray)),
+        120 => {
+            let len = c.read_u32::<BigEndian>()? as usize;
+            let mut vec = Vec::new();
+            for _ in 0..len {
+                vec.push(c.read_u8()?);
+            }
+            Ok(ProtocolValue::ByteArray(vec))
+        }
         121 => Ok(ProtocolValue::Array(read_value_array_of_same_type(c)?)),
         122 => Ok(ProtocolValue::ObjectArray(read_value_array(c)?)),
         _ => Err(PhotonReadError::UnknownProtocolValueType(protocol_type)),
