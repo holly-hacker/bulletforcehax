@@ -87,28 +87,28 @@ mod writing_protocol_types_tests {
     }
 
     #[test]
-    #[ignore = "ByteArray not yet implemented"]
     fn can_write_byte_array() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
-        // write_value_of_type(writer, ProtocolValue::ByteArray([0xDE, 0xAD, 0xBE, 0xEF]))?;
+        write_value_of_type(writer, ProtocolValue::ByteArray(vec![0xDE, 0xAD, 0xBE, 0xEF]))?;
         assert_eq!(writer, &vec![120, 0, 0, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]);
         Ok(())
     }
 
     #[test]
-    #[ignore = "IntegerArray not yet implemented"]
     fn can_write_int_array() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
-        // write_value_of_type(writer, ProtocolValue::IntegerArray([-559038737, -889275714]))?;
+        write_value_of_type(
+            writer,
+            ProtocolValue::IntegerArray(vec![-559038737 as i32 as u32, -889275714 as i32 as u32]),
+        )?;
         assert_eq!(writer, &vec![110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]);
         Ok(())
     }
 
     #[test]
-    #[ignore = "StringArray not yet implemented"]
     fn can_write_string_array() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
-        // write_value_of_type(writer, ProtocolValue::StringArray(["abc", ""])?;
+        write_value_of_type(writer, ProtocolValue::StringArray(vec!["abc", ""]))?;
         assert_eq!(writer, &vec![97, 0, 2, 0, 3, 0x61, 0x62, 0x63, 0, 0]);
         Ok(())
     }
