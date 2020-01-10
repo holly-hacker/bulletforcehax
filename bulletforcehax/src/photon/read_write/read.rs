@@ -52,7 +52,7 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
                     c.read_f32::<BigEndian>()?,
                     c.read_f32::<BigEndian>()?,
                 )),
-                b'P' if len == 4 => Ok(CustomType::Player(c.read_u32::<BigEndian>()?)),
+                b'P' if len == 4 => Ok(CustomType::Player(c.read_i32::<BigEndian>()?)),
                 b'W' | b'V' | b'Q' | b'P' => Err(PhotonReadError::CustomTypeInvalidLength),
                 _ => {
                     let mut data = vec![0; len as usize];
@@ -65,14 +65,14 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
         101 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::EventData)),
         102 => Ok(ProtocolValue::Float(c.read_f32::<BigEndian>()?)),
         104 => Ok(ProtocolValue::Hashtable(read_hash_table(c)?)),
-        105 => Ok(ProtocolValue::Integer(c.read_u32::<BigEndian>()?)),
-        107 => Ok(ProtocolValue::Short(c.read_u16::<BigEndian>()?)),
-        108 => Ok(ProtocolValue::Long(c.read_u64::<BigEndian>()?)),
+        105 => Ok(ProtocolValue::Integer(c.read_i32::<BigEndian>()?)),
+        107 => Ok(ProtocolValue::Short(c.read_i16::<BigEndian>()?)),
+        108 => Ok(ProtocolValue::Long(c.read_i64::<BigEndian>()?)),
         110 => {
-            let len = c.read_u32::<BigEndian>()? as usize;
+            let len = c.read_i32::<BigEndian>()? as usize;
             let mut vec = Vec::new();
             for _ in 0..len {
-                vec.push(c.read_u32::<BigEndian>()?);
+                vec.push(c.read_i32::<BigEndian>()?);
             }
             Ok(ProtocolValue::IntegerArray(vec))
         }

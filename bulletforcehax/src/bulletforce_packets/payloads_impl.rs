@@ -53,8 +53,8 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s>
                 if arr.len() != 2 {
                     return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
                 }
-                let int2 = unwrap_protocol_int(arr.remove(1))? as u64;
-                let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
+                let int2 = unwrap_protocol_int(arr.remove(1))? as u32 as u64;
+                let int1 = unwrap_protocol_int(arr.remove(0))? as u32 as u64;
                 int1 | (int2 << 32)
             },
             mean_rank: get_protocol_int_or_float(&mut table, ProtocolValue::String("meanRank"))?,
@@ -92,8 +92,8 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
         map.insert(
             ProtocolValue::String("allowedweapons"),
             ProtocolValue::Array(vec![
-                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as u32),
-                ProtocolValue::Integer((self.allowed_weapons >> 32) as u32),
+                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as i32),
+                ProtocolValue::Integer((self.allowed_weapons >> 32) as i32),
             ]),
         );
         map.insert(
@@ -157,8 +157,8 @@ impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperti
                 if arr.len() != 2 {
                     return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
                 }
-                let int2 = unwrap_protocol_int(arr.remove(1))? as u64;
-                let int1 = unwrap_protocol_int(arr.remove(0))? as u64;
+                let int2 = unwrap_protocol_int(arr.remove(1))? as u32 as u64;
+                let int1 = unwrap_protocol_int(arr.remove(0))? as u32 as u64;
                 int1 | (int2 << 32)
             },
             event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
@@ -230,8 +230,8 @@ impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<
         map.insert(
             ProtocolValue::String("allowedweapons"),
             ProtocolValue::Array(vec![
-                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as u32),
-                ProtocolValue::Integer((self.allowed_weapons >> 32) as u32),
+                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as i32),
+                ProtocolValue::Integer((self.allowed_weapons >> 32) as i32),
             ]),
         );
         map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));

@@ -60,9 +60,9 @@ pub enum ProtocolValue<'a> {
     Null(),
     Bool(bool),
     Byte(u8),
-    Short(u16),
-    Integer(u32),
-    Long(u64),
+    Short(i16),
+    Integer(i32),
+    Long(i64),
     Float(f32),
     Double(f64),
     String(&'a str),
@@ -75,7 +75,7 @@ pub enum ProtocolValue<'a> {
     ObjectArray(Vec<ProtocolValue<'a>>),
     ByteArray(Vec<u8>),
     StringArray(Vec<&'a str>),
-    IntegerArray(Vec<u32>),
+    IntegerArray(Vec<i32>),
     /// hashmap of predefined types, `IDictionary` or `Dictionary<T1, T2>` in C#
     Dictionary,
     /// hashmap of arbitrary types, `Hashtable` or `Dictionary<object, object>` in C#
@@ -89,7 +89,7 @@ pub enum CustomType {
     Vector3(f32, f32, f32),
     Quaternion(f32, f32, f32, f32),
     /// Contains a players ActorNumber
-    Player(u32),
+    Player(i32),
     Custom {
         id: u8,
         data: Vec<u8>,

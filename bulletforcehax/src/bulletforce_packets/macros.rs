@@ -45,19 +45,19 @@ macro_rules! gen_protocol_type_functions {
 gen_protocol_type_functions!(string, &'a str, ProtocolValue::String);
 gen_protocol_type_functions!(bool, bool, ProtocolValue::Bool);
 gen_protocol_type_functions!(byte, u8, ProtocolValue::Byte);
-gen_protocol_type_functions!(short, u16, ProtocolValue::Short);
-gen_protocol_type_functions!(int, u32, ProtocolValue::Integer);
+gen_protocol_type_functions!(short, i16, ProtocolValue::Short);
+gen_protocol_type_functions!(int, i32, ProtocolValue::Integer);
 gen_protocol_type_functions!(float, f32, ProtocolValue::Float);
 gen_protocol_type_functions!(hashtable, HashMap<ProtocolValue<'a>, ProtocolValue<'a>>, ProtocolValue::Hashtable);
 gen_protocol_type_functions!(array, Vec<ProtocolValue<'a>>, ProtocolValue::Array);
 
-// helper method to read Either<u32, f32>
+// helper method to read Either<i32, f32>
 // not a macro (yet?), shh don't tell anyone
 // in the future, I should probably stop using macros and try to use generic functions instead
 pub fn get_protocol_int_or_float<'a>(
     map: &mut HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
     key: ProtocolValue<'static>,
-) -> PacketReadResult<Either<u32, f32>> {
+) -> PacketReadResult<Either<i32, f32>> {
     match map.remove(&key) {
         Some(val) => match val {
             ProtocolValue::Integer(i) => Ok(Either::Left(i)),

@@ -55,11 +55,11 @@ generate_read_write_test!(null, ProtocolValue::Null(), [0x2au8]);
 generate_read_write_test!(bool_true, ProtocolValue::Bool(true), [0x6f, 0x01]);
 generate_read_write_test!(bool_false, ProtocolValue::Bool(false), [0x6f, 0x00]);
 generate_read_write_test!(u8, ProtocolValue::Byte(0x90), [0x62, 0x90]);
-generate_read_write_test!(s16, ProtocolValue::Short((-1337 as i16) as u16), [0x6b, 0xFA, 0xC7]); // NOTE: actually read as u16
-generate_read_write_test!(s32, ProtocolValue::Integer((-559038737 as i32) as u32), [0x69, 0xDE, 0xAD, 0xBE, 0xEF]);
+generate_read_write_test!(s16, ProtocolValue::Short(-1337), [0x6b, 0xFA, 0xC7]);
+generate_read_write_test!(s32, ProtocolValue::Integer(-559038737), [0x69, 0xDE, 0xAD, 0xBE, 0xEF]);
 generate_read_write_test!(
     s64,
-    ProtocolValue::Long((-3886136854700967234 as i64) as u64),
+    ProtocolValue::Long(-3886136854700967234),
     [0x6c, 0xCA, 0x11, 0xAB, 0x1E, 0xCA, 0xFE, 0xBA, 0xBE]
 );
 generate_read_write_test!(f32, ProtocolValue::Float(42.), [0x66, 0x42, 0x28, 0x00, 0x00]);
@@ -77,7 +77,7 @@ generate_read_write_test!(
 );
 generate_read_write_test!(
     int_array,
-    ProtocolValue::IntegerArray(vec![-559038737 as i32 as u32, -889275714 as i32 as u32]),
+    ProtocolValue::IntegerArray(vec![-559038737, -889275714]),
     [110, 0, 0, 0, 2, 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE]
 );
 generate_read_write_test!(
@@ -124,8 +124,8 @@ generate_read_write_test!(
 );
 generate_read_write_test!(
     player,
-    ProtocolValue::Custom(CustomType::Player(0xDEADBEEF)),
-    [99, 0x50, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]
+    ProtocolValue::Custom(CustomType::Player(0x00C0FFEE)),
+    [99, 0x50, 0, 4, 0x00, 0xC0, 0xFF, 0xEE]
 );
 generate_read_write_test!(
     other_custom,

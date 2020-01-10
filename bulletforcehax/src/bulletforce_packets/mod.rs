@@ -29,9 +29,9 @@ pub enum Event<'a> {
     LobbyStats,
     /// Stats such as game, peer and master peer count
     AppStats {
-        game_count: u32,
-        peer_count: u32,
-        master_peer_count: u32,
+        game_count: i32,
+        peer_count: i32,
+        master_peer_count: i32,
     },
     /// Unused
     Match,
@@ -49,9 +49,9 @@ pub enum Event<'a> {
     Leave,
     /// Player joins the game
     Join {
-        actor_nr: u32,
+        actor_nr: i32,
         player_properties: PlayerProperties<'a>,
-        actor_list: Vec<u32>,
+        actor_list: Vec<i32>,
     },
 }
 
@@ -83,13 +83,13 @@ pub enum Operation<'a> {
         room_name: &'a str,
         game_properties: GameProperties<'a>,
         player_properties: PlayerProperties<'a>,
-        room_option_flags: u32,
+        room_option_flags: i32,
         cleanup_cache_on_leave: bool,
         check_user_on_join: bool,
     },
     CreateGameResponse2 {
-        actor_list: Vec<u32>,
-        actor_nr: u32,
+        actor_list: Vec<i32>,
+        actor_nr: i32,
         game_properties: GameProperties<'a>,
     },
     LeaveLobby,
@@ -110,7 +110,7 @@ pub enum Operation<'a> {
     },
     AuthenticateResponse2 {
         secret: &'a str,
-        position: u32,
+        position: i32,
     },
     AuthenticateResponseEmpty(),
     AuthenticateOnce,
@@ -125,7 +125,7 @@ pub enum Operation<'a> {
         broadcast: bool,
         /// updates select properties of an actor
         properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
-        actor_nr: u32,
+        actor_nr: i32,
     },
     SetPropertiesEmpty(),
     /// when props only contains `is_visible: bool`
@@ -136,7 +136,7 @@ pub enum Operation<'a> {
     /// Raise an event for other actors in the room
     RaiseEventActors {
         cache: u8,
-        actor_list: Vec<u32>,
+        actor_list: Vec<i32>,
         code: u8,
     },
     RaiseEventSelf {
@@ -152,8 +152,8 @@ pub enum Operation<'a> {
 #[derive(Debug)]
 pub enum InternalOperation {
     InitEncryption,
-    PingRequest { local_time: u32 },
-    PingResponse { local_time: u32, server_time: u32 },
+    PingRequest { local_time: i32 },
+    PingResponse { local_time: i32, server_time: i32 },
 }
 
 pub enum Direction {
@@ -177,10 +177,10 @@ pub struct GameInfo<'a> {
     dedicated: bool,
     hardcore: bool,
     allowed_weapons: u64,
-    mean_rank: either::Either<u32, f32>,
+    mean_rank: either::Either<i32, f32>,
     mean_kd: f32,
-    average_rank: u32,
-    event_code: u32,
+    average_rank: i32,
+    event_code: i32,
 
     // byte_251: bool, is_removed, either this or all other fields are present
     /// Current players in the room
@@ -207,20 +207,20 @@ pub struct GameProperties<'a> {
     dedicated: bool,
     hardcore: bool,
     allowed_weapons: u64,
-    mean_rank: either::Either<u32, f32>,
+    mean_rank: either::Either<i32, f32>,
     mean_kd: f32,
-    average_rank: u32,
-    event_code: u32,
+    average_rank: i32,
+    event_code: i32,
 
     // exclusive for GameProperties
     spectate_for_mods_only: bool,
-    max_ping: u16,
+    max_ping: i16,
     banned_weapon_message: &'a str,
     time_scale: f32,
     match_countdown_time: f32,
     round_started: bool,
-    score_limit: u32,
-    gun_game_preset: u32,
+    score_limit: i32,
+    gun_game_preset: i32,
 
     // options below not present in Operation::SetProperties
     cleanup_cache_on_leave: Option<bool>, // 249
@@ -231,7 +231,7 @@ pub struct GameProperties<'a> {
     is_visible: Option<bool>, // 254
     max_players: Option<u8>,              // 255
     /// Only present in Operation::CreateGame* response
-    master_client_id: Option<u32>, // 248
+    master_client_id: Option<i32>, // 248
 }
 
 #[derive(Debug, PartialEq)]

@@ -50,9 +50,9 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
         ProtocolValue::Bool(true) => Ok(c.write_u8(1)?),
         ProtocolValue::Bool(false) => Ok(c.write_u8(0)?),
         ProtocolValue::Byte(x) => Ok(c.write_u8(x)?),
-        ProtocolValue::Short(x) => Ok(c.write_u16::<BigEndian>(x)?),
-        ProtocolValue::Integer(x) => Ok(c.write_u32::<BigEndian>(x)?),
-        ProtocolValue::Long(x) => Ok(c.write_u64::<BigEndian>(x)?),
+        ProtocolValue::Short(x) => Ok(c.write_i16::<BigEndian>(x)?),
+        ProtocolValue::Integer(x) => Ok(c.write_i32::<BigEndian>(x)?),
+        ProtocolValue::Long(x) => Ok(c.write_i64::<BigEndian>(x)?),
         ProtocolValue::Float(x) => Ok(c.write_f32::<BigEndian>(x)?),
         ProtocolValue::Double(x) => Ok(c.write_f64::<BigEndian>(x)?),
         ProtocolValue::String(x) => {
@@ -67,7 +67,7 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
         ProtocolValue::IntegerArray(ints) => {
             c.write_u32::<BigEndian>(ints.len() as u32)?;
             for i in ints {
-                c.write_u32::<BigEndian>(i)?;
+                c.write_i32::<BigEndian>(i)?;
             }
             Ok(())
         }
@@ -140,7 +140,7 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
                 CustomType::Player(id) => {
                     c.write_u8(b'P')?;
                     c.write_u16::<BigEndian>(4)?;
-                    c.write_u32::<BigEndian>(id)?;
+                    c.write_i32::<BigEndian>(id)?;
                 }
                 CustomType::Custom { id, data } => {
                     c.write_u8(id)?;
