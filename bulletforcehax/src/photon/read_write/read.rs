@@ -37,23 +37,29 @@ pub fn read_value_of_type<'a>(c: &mut Cursor<&'a [u8]>, protocol_type: u8) -> Ph
         98 => Ok(ProtocolValue::Byte(c.read_u8()?)),
         99 => {
             let id = c.read_u8()?;
+            let len = c.read_u16::<BigEndian>()?;
             Ok(ProtocolValue::Custom(match id {
-                b'W' => CustomType::Vector2(c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?),
-                b'V' => CustomType::Vector3(c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?),
-                b'Q' => CustomType::Quaternion(
+                // note: should change these len checks with asserts
+                b'W' if len == 8 => Ok(CustomType::Vector2(c.read_f32::<BigEndian>()?, c.read_f32::<BigEndian>()?)),
+                b'V' if len == 12 => Ok(CustomType::Vector3(
+                    c.read_f32::<BigEndian>()?,
+                    c.read_f32::<BigEndian>()?,
+                    c.read_f32::<BigEndian>()?,
+                )),
+                b'Q' if len == 16 => Ok(CustomType::Quaternion(
                     c.read_f32::<BigEndian>()?,
                     c.read_f32::<BigEndian>()?,
                     c.read_f32::<BigEndian>()?,
                     c.read_f32::<BigEndian>()?,
-                ),
-                b'P' => CustomType::Player(c.read_u32::<BigEndian>()?),
+                )),
+                b'P' if len == 4 => Ok(CustomType::Player(c.read_u32::<BigEndian>()?)),
+                b'W' | b'V' | b'Q' | b'P' => Err(PhotonReadError::CustomTypeInvalidLength),
                 _ => {
-                    let len = c.read_u16::<BigEndian>()?;
                     let mut data = vec![0; len as usize];
                     c.read_exact(data.as_mut_slice())?;
-                    CustomType::Custom { id, data }
+                    Ok(CustomType::Custom { id, data })
                 }
-            }))
+            }?))
         }
         100 => Ok(ProtocolValue::Double(c.read_f64::<BigEndian>()?)),
         101 => Err(PhotonReadError::UnimplementedProtocolValueType(ProtocolValue::EventData)),

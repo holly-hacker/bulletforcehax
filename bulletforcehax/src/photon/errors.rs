@@ -11,6 +11,7 @@ pub enum PhotonReadError {
     UnimplementedPacketType(u8),
     UnimplementedProtocolValueType(ProtocolValue<'static>),
     InvalidDebugStringType,
+    CustomTypeInvalidLength,
     IOError(std::io::Error),
     EncodingError(std::str::Utf8Error),
 }

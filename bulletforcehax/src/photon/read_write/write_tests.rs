@@ -164,7 +164,7 @@ mod writing_protocol_types_tests {
     fn can_write_vec2_custom() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
         write_value_of_type(writer, ProtocolValue::Custom(CustomType::Vector2(1., 13.37)))?;
-        assert_eq!(writer, &vec![99, 0x57, 0x3f, 0x80, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85]);
+        assert_eq!(writer, &vec![99, 0x57, 0, 8, 0x3f, 0x80, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85]);
         Ok(())
     }
 
@@ -174,7 +174,7 @@ mod writing_protocol_types_tests {
         write_value_of_type(writer, ProtocolValue::Custom(CustomType::Vector3(1., 0., 13.37)))?;
         assert_eq!(
             writer,
-            &vec![99, 0x56, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85]
+            &vec![99, 0x56, 0, 12, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85]
         );
         Ok(())
     }
@@ -185,7 +185,7 @@ mod writing_protocol_types_tests {
         write_value_of_type(writer, ProtocolValue::Custom(CustomType::Quaternion(1., 0., 13.37, 16.)))?;
         assert_eq!(
             writer,
-            &vec![99, 0x51, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85, 0x41, 0x80, 0x00, 0x00]
+            &vec![99, 0x51, 0, 16, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85, 0x41, 0x80, 0x00, 0x00]
         );
         Ok(())
     }
@@ -194,7 +194,7 @@ mod writing_protocol_types_tests {
     fn can_write_player_custom() -> PhotonWriteResult<()> {
         let writer: &mut Vec<u8> = &mut Vec::new();
         write_value_of_type(writer, ProtocolValue::Custom(CustomType::Player(0xDEADBEEF)))?;
-        assert_eq!(writer, &vec![99, 0x50, 0xDE, 0xAD, 0xBE, 0xEF]);
+        assert_eq!(writer, &vec![99, 0x50, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF]);
         Ok(())
     }
 

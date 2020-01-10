@@ -166,7 +166,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     fn can_read_vec2_custom() -> PhotonReadResult<()> {
-        let reader = &mut Cursor::new([99, 0x57, 0x3f, 0x80, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
+        let reader = &mut Cursor::new([99, 0x57, 0, 8, 0x3f, 0x80, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
         let x = read_value(reader)?;
         match x {
             ProtocolValue::Custom(t) => match t {
@@ -183,7 +183,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     fn can_read_vec3_custom() -> PhotonReadResult<()> {
-        let reader = &mut Cursor::new([99, 0x56, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
+        let reader = &mut Cursor::new([99, 0x56, 0, 12, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85].as_ref());
         let x = read_value(reader)?;
         match x {
             ProtocolValue::Custom(t) => match t {
@@ -203,7 +203,7 @@ mod reading_protocol_types_tests {
     fn can_read_quaternion_custom() -> PhotonReadResult<()> {
         let reader = &mut Cursor::new(
             [
-                99, 0x51, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85, 0x41, 0x80, 0x00, 0x00,
+                99, 0x51, 0, 16, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x55, 0xeb, 0x85, 0x41, 0x80, 0x00, 0x00,
             ]
             .as_ref(),
         );
@@ -225,7 +225,7 @@ mod reading_protocol_types_tests {
 
     #[test]
     fn can_read_player_custom() -> PhotonReadResult<()> {
-        let reader = &mut Cursor::new([99, 0x50, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
+        let reader = &mut Cursor::new([99, 0x50, 0, 4, 0xDE, 0xAD, 0xBE, 0xEF].as_ref());
         let x = read_value(reader)?;
         match x {
             ProtocolValue::Custom(t) => match t {

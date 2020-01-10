@@ -118,17 +118,20 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
             match custom {
                 CustomType::Vector2(x, y) => {
                     c.write_u8(b'W')?;
+                    c.write_u16::<BigEndian>(8)?;
                     c.write_f32::<BigEndian>(x)?;
                     c.write_f32::<BigEndian>(y)?;
                 }
                 CustomType::Vector3(x, y, z) => {
                     c.write_u8(b'V')?;
+                    c.write_u16::<BigEndian>(12)?;
                     c.write_f32::<BigEndian>(x)?;
                     c.write_f32::<BigEndian>(y)?;
                     c.write_f32::<BigEndian>(z)?;
                 }
                 CustomType::Quaternion(x, y, z, w) => {
                     c.write_u8(b'Q')?;
+                    c.write_u16::<BigEndian>(16)?;
                     c.write_f32::<BigEndian>(x)?;
                     c.write_f32::<BigEndian>(y)?;
                     c.write_f32::<BigEndian>(z)?;
@@ -136,6 +139,7 @@ pub fn write_value_of_type_without_type(c: &mut dyn Write, value: ProtocolValue)
                 }
                 CustomType::Player(id) => {
                     c.write_u8(b'P')?;
+                    c.write_u16::<BigEndian>(4)?;
                     c.write_u32::<BigEndian>(id)?;
                 }
                 CustomType::Custom { id, data } => {
