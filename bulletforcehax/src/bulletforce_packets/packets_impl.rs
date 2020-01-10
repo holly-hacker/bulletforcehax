@@ -275,7 +275,22 @@ impl<'s> Operation<'s> {
                 broadcast: get_u8_bool(&mut params, ParameterCode::Broadcast)?,
                 properties: get_u8_hashtable(&mut params, ParameterCode::Properties)?,
             }),
-            253 => err(Operation::RaiseEvent, &params),
+            253 if params.is_empty() => Ok(Operation::RaiseEventEmpty()),
+            253 if params.contains_key(&ParameterCode::ActorList) => Ok(Operation::RaiseEventActors {
+                cache: get_u8_byte(&mut params, ParameterCode::Cache)?,
+                code: get_u8_byte(&mut params, ParameterCode::Code)?,
+                actor_list: get_u8_array(&mut params, ParameterCode::ActorList).map(|protocol_array| {
+                    protocol_array
+                        .into_iter()
+                        .map(|protocol_value| unwrap_protocol_int(protocol_value).expect("CreateGame response 2 had a non-int actor id"))
+                        .collect()
+                })?,
+            }),
+            253 => Ok(Operation::RaiseEventSelf {
+                cache: get_u8_byte(&mut params, ParameterCode::Cache).ok(),
+                code: get_u8_byte(&mut params, ParameterCode::Code)?,
+                data: get_u8_hashtable(&mut params, ParameterCode::Data)?,
+            }),
             254 => err(Operation::Leave, &params),
             255 => err(Operation::Join, &params),
             _ => Err(PacketReadError::UnknownOperationType(operation_type)),
@@ -318,7 +333,9 @@ impl<'s> Operation<'s> {
             Operation::SetPropertiesActor { .. } => 252,
             Operation::SetPropertiesEmpty() => 252,
             Operation::SetPropertiesUnknown { .. } => 252,
-            Operation::RaiseEvent => 253,
+            Operation::RaiseEventActors { .. } => 253,
+            Operation::RaiseEventSelf { .. } => 253,
+            Operation::RaiseEventEmpty() => 253,
             Operation::Leave => 254,
             Operation::Join => 255,
         }
@@ -424,7 +441,20 @@ impl<'s> Operation<'s> {
                 ParameterCode::Broadcast => ProtocolValue::Bool(broadcast),
                 ParameterCode::Properties => ProtocolValue::Hashtable(properties),
             }),
-            Operation::RaiseEvent => err(Operation::RaiseEvent),
+            Operation::RaiseEventActors { cache, actor_list, code } => Ok(hashmap! {
+                ParameterCode::Code => ProtocolValue::Byte(code),
+                ParameterCode::ActorList => ProtocolValue::Array(actor_list.into_iter().map(ProtocolValue::Integer).collect()),
+                ParameterCode::Cache => ProtocolValue::Byte(cache),
+            }),
+            Operation::RaiseEventSelf { cache, code, data } => {
+                let mut map = hashmap! {
+                    ParameterCode::Code => ProtocolValue::Byte(code),
+                    ParameterCode::Data => ProtocolValue::Hashtable(data),
+                };
+                cache.and_then(|x| map.insert(ParameterCode::Cache, ProtocolValue::Byte(x)));
+                Ok(map)
+            }
+            Operation::RaiseEventEmpty() => Ok(hashmap!()),
             Operation::Leave => err(Operation::Leave),
             Operation::Join => err(Operation::Join),
         }

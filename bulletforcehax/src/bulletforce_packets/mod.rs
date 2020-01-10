@@ -134,7 +134,17 @@ pub enum Operation<'a> {
         properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
     },
     /// Raise an event for other actors in the room
-    RaiseEvent,
+    RaiseEventActors {
+        cache: u8,
+        actor_list: Vec<u32>,
+        code: u8,
+    },
+    RaiseEventSelf {
+        cache: Option<u8>,
+        code: u8,
+        data: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+    },
+    RaiseEventEmpty(),
     Leave,
     Join,
 }
@@ -289,7 +299,7 @@ pub mod ParameterCode {
     pub const Group: u8 = 240;
     pub const CleanupCacheOnLeave: u8 = 241;
     pub const Code: u8 = 244;
-    pub const CustomEventContent: u8 = 245;
+    /// Also called `CustomEventContent`, which has the same purpose.
     pub const Data: u8 = 245;
     pub const ReceiverGroup: u8 = 246;
     pub const Cache: u8 = 247;
