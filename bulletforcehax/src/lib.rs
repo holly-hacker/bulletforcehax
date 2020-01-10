@@ -7,9 +7,9 @@ extern crate wasm_bindgen;
 use log::{debug, error, info, Level};
 use wasm_bindgen::prelude::*;
 
-mod bulletforce_packets;
-pub mod photon;
-use bulletforce_packets::{Direction, Packet};
+mod photon;
+pub mod photon_core;
+use photon::{Direction, Packet};
 
 #[wasm_bindgen]
 extern "C" {

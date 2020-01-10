@@ -1,4 +1,4 @@
-use bulletforcehax::photon::*;
+use bulletforcehax::photon_core::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
