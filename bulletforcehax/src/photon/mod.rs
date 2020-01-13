@@ -1,3 +1,5 @@
+use bitflags::bitflags;
+use num_derive::FromPrimitive;
 use std::collections::HashMap;
 
 pub use super::photon_core::ProtocolValue;
@@ -13,8 +15,17 @@ mod payloads_tests;
 #[derive(Debug)]
 pub enum Packet<'a> {
     OperationRequest(Operation<'a>),
-    OperationResponse(Operation<'a>, i16, Option<&'a str>),
-    Event(Event<'a>),
+    OperationResponse {
+        parameters: Operation<'a>,
+        return_code: i16,
+        debug_string: Option<&'a str>,
+        secret: Option<&'a str>, // note: not present in OperationRequest on purpose. See CreateGame
+    },
+    Event {
+        parameters: Event<'a>,
+        custom_data: Option<ProtocolValue<'a>>,
+        sender: Option<i32>,
+    },
     InternalOperationRequest(InternalOperation),
     InternalOperationResponse(InternalOperation, i16, Option<&'a str>),
 }
@@ -27,7 +38,7 @@ pub enum Event<'a> {
     AuthEvent,
     /// Contains list of lobbies with player and game counts
     LobbyStats,
-    /// Stats such as game, peer and master peer count
+    /// Stats such as game, peer and master peer count. Sent every minute by master server.
     AppStats {
         game_count: i32,
         peer_count: i32,
@@ -37,21 +48,21 @@ pub enum Event<'a> {
     Match,
     /// Unused
     QueueState,
-    /// Update to game list
-    GameListUpdate(HashMap<&'a str, Option<GameInfo<'a>>>),
-    /// Initial game list
-    GameList(Vec<GameInfo<'a>>),
+    /// Initial game list. Contains all current games.
+    GameList(HashMap<&'a str, RoomInfo<'a>>),
+    /// Update to game list. Contains `Option`s which are `None` if the game was removed, and `Some` if it was added or updated.
+    GameListUpdate(HashMap<&'a str, Option<RoomInfo<'a>>>),
     CacheSliceChanged,
     ErrorInfo,
     /// Used to update broadcasted properties
     PropertiesChanged,
     /// Player leaves the game
     Leave,
-    /// Player joins the game
+    /// Player joins the game. If `actor_nr` is 1, we may be creating the game.
     Join {
-        actor_nr: i32,
-        player_properties: PlayerProperties<'a>,
-        actor_list: Vec<i32>,
+        player_properties: Player<'a>,
+        /// All players currently in the room, if this event is ours
+        actor_list: Option<Vec<i32>>,
     },
 }
 
@@ -70,88 +81,139 @@ pub enum Operation<'a> {
     CancelJoinRandom,
     JoinRandomGame,
     JoinGame,
-    CreateGameRequest {
-        room_name: &'a str,
+    /// CreateGame on MasterServer
+    CreateGameRequestMaster {
+        room_name: Option<&'a str>,   // can be null, not present then
+        lobby_name: Option<&'a str>,  // if lobby not null and not default
+        lobby_type: Option<bool>,     // if lobby not null and not default
+        expected_users: Vec<&'a str>, // not present if null or empty
     },
-    CreateGameResponse {
-        room_name: &'a str,
+    /// CreateGame on GameServer, has extra options compared to `CreateGameRequestMaster`
+    CreateGameRequestGame {
+        room_name: Option<&'a str>,   // can be null, not present then
+        lobby_name: Option<&'a str>,  // if lobby not null and not default
+        lobby_type: Option<bool>,     // if lobby not null and not default
+        expected_users: Vec<&'a str>, // not present if null or empty
+
+        /// Player struct, but with only custom properties and nick
+        player_properties: Option<Player<'a>>, // only present if not null and not empty?
+        broadcast: Option<bool>, // present+true if playerproperties is present
+
+        game_properties: RoomOptions<'a>, // always present, so can be used to differentiate master and game packet
+        player_ttl: i32,                  // only present if ttl > 0 or == -1
+        empty_room_ttl: i32,              // only present if ttl > 0
+        plugins: Option<Vec<&'a str>>,    // not present if null
+
+        room_option_flags: RoomOptionsFlags, // note: assuming always present,  so that other bool flags don't need to be present
+    },
+    /// CreateGame in MasterServer. The `Secret` variable is can be found in `OperationResponse`.
+    CreateGameResponseMaster {
+        room_name: Option<&'a str>,
         address: &'a str,
-        secret: &'a str,
     },
-    CreateGameRequest2 {
-        broadcast: bool,
-        room_name: &'a str,
-        game_properties: GameProperties<'a>,
-        player_properties: PlayerProperties<'a>,
-        room_option_flags: i32,
-        cleanup_cache_on_leave: bool,
-        check_user_on_join: bool,
-    },
-    CreateGameResponse2 {
-        actor_list: Vec<i32>,
+    /// CreateGame on GameServer
+    CreateGameResponseGame {
+        /// our actor number
         actor_nr: i32,
-        game_properties: GameProperties<'a>,
+        actor_list: Option<Vec<i32>>,
+        game_properties: RoomInfo<'a>,
+        /// A list of all actors in the room.
+        player_properties: HashMap<i32, Player<'a>>, // Should correspond to `actor_list`?
     },
     LeaveLobby,
     JoinLobby(),
-    AuthenticateRequest {
-        region: &'a str,
-        application_id: &'a str, // could be parsed as u128
+    /// Full authentication request to request a token
+    AuthenticateRequestNoToken {
+        lobby_stats: bool, // not present if false
         app_version: &'a str,
+        app_id: &'a str, // could be parsed as u128 since it's a guid
+        region: Option<&'a str>,
+        user_id: Option<&'a str>,
+        client_auth_type: Option<u8>,
+        /// Only if `client_auth_type` is not 255
+        client_auth_params: Option<&'a str>, // not present if not null or empty
+        client_auth_data: Option<&'a str>, // can be empty
     },
-    AuthenticateRequest2 {
+    /// Authenticate if we already have a token. Since this is sent, `secret` is a payload parameter.
+    AuthenticateRequestToken {
+        lobby_stats: bool, // not present if false
         secret: &'a str,
     },
-    AuthenticateResponse {
-        unknown: &'a str,
-        secret: &'a str,
+    /// The Authenticate response on NameServer
+    /// The `Secret` variable is can be found in `OperationResponse`.
+    AuthenticateResponseName {
+        user_id: Option<&'a str>,
+        nickname: Option<&'a str>,
+        encryption_data: Option<HashMap<u8, ProtocolValue<'a>>>, // probably not used in websocket connections
+        custom_data: Option<HashMap<&'a str, ProtocolValue<'a>>>,
+
+        // unique
+        cluster: Option<&'a str>,
         address: &'a str,
-        user_id: &'a str,
     },
-    AuthenticateResponse2 {
-        secret: &'a str,
-        position: i32,
+    /// The Authenticate response on MasterServer or GameServer
+    /// The `Secret` variable is can be found in `OperationResponse`.
+    AuthenticateResponseMasterOrGame {
+        /// Only on MasterServer
+        user_id: Option<&'a str>,
+        /// Only on MasterServer
+        nickname: Option<&'a str>,
+        /// Only on MasterServer
+        encryption_data: Option<HashMap<u8, ProtocolValue<'a>>>, // probably not used in websocket connections
+        custom_data: Option<HashMap<&'a str, ProtocolValue<'a>>>,
     },
-    AuthenticateResponseEmpty(),
     AuthenticateOnce,
     ChangeGroups,
     ExchangeKeysForEncryption,
     GetProperties,
+    // send only
+    // TODO: how to handle this? add fn to RoomInfo to apply this update?
     SetPropertiesGame {
-        broadcast: bool,
-        properties: GameProperties<'a>,
+        /// The added/changed properties of this room
+        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+        expected_properties: Option<HashMap<ProtocolValue<'a>, ProtocolValue<'a>>>,
+        broadcast: bool,     // always true
+        event_forward: bool, // not present if false
     },
+    // send only
+    // TODO: how to handle this? add fn to Player to apply this update?
     SetPropertiesActor {
-        broadcast: bool,
-        /// updates select properties of an actor
-        properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+        /// The actor to update
         actor_nr: i32,
-    },
-    SetPropertiesEmpty(),
-    /// when props only contains `is_visible: bool`
-    SetPropertiesUnknown {
-        broadcast: bool,
+        /// The added/changed properties of this actor
         properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
+        expected_properties: Option<HashMap<ProtocolValue<'a>, ProtocolValue<'a>>>,
+        broadcast: bool,     // always true
+        event_forward: bool, // not present if false
     },
     /// Raise an event for other actors in the room
-    RaiseEventActors {
-        cache: u8,
-        actor_list: Vec<i32>,
-        code: u8,
+    RaiseEvent {
+        /// The type of caching. If one of the following values, the other properties are `None`:
+        /// - SliceSetIndex
+        /// - SlicePurgeIndex
+        /// - SlicePurgeUpToIndex
+        /// - SliceIncreaseIndex
+        /// - RemoveFromRoomCacheForActorsLeft
+        ///
+        /// if this is `TargetActors`, only the `actor_list`, `code` and `data` properties may be set
+        cache: EventCaching, // not present if `DoNotCache`
+        actor_list: Option<Vec<i32>>,
+        /// The target group. 0 means everybody, other values require players to be subscribed to it.
+        group: Option<u8>, // not present if 0
+        receivers: Option<ReceiverGroup>, // not present if default
+        event_forward: Option<bool>,      // not present if false
+        /// The event code
+        code: Option<u8>,
+        /// Custom data associated to this event
+        data: Option<ProtocolValue<'a>>,
     },
-    RaiseEventSelf {
-        cache: Option<u8>,
-        code: u8,
-        data: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
-    },
-    RaiseEventEmpty(),
     Leave,
     Join,
 }
 
 #[derive(Debug)]
 pub enum InternalOperation {
-    InitEncryption,
+    InitEncryption, // TODO: has property public_key
     PingRequest { local_time: i32 },
     PingResponse { local_time: i32, server_time: i32 },
 }
@@ -162,81 +224,75 @@ pub enum Direction {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct GameInfo<'a> {
-    // shared with GameProperties
-    game_id: &'a str,
-    room_id: &'a str,
-    store_id: &'a str,
-    room_name: &'a str,
-    mode_name: &'a str,
-    password: &'a str,
-    map_name: &'a str,
-    match_started: bool,
-    switching_map: bool,
-    room_type: u8, // could become c-style enum
-    dedicated: bool,
-    hardcore: bool,
-    allowed_weapons: u64,
-    mean_rank: either::Either<i32, f32>,
-    mean_kd: f32,
-    average_rank: i32,
-    event_code: i32,
-
-    // byte_251: bool, is_removed, either this or all other fields are present
-    /// Current players in the room
-    player_count: u8, // 252
-    /// Allow other players to join
-    is_open: bool, // 253
+// note: removed_from_list is not present here
+// TODO: which of these are not always present for default values
+/// A room containing players. You can receive a list by joining the lobby on the master server.
+///
+/// The name of this room is not included in this struct (not counting `custom_properties`).
+pub struct RoomInfo<'a> {
     /// Max players that fit in this room. 0 for unlimited.
-    max_players: u8, // 255
+    max_players: u8,
+    /// Allow other players to join
+    is_open: bool, // defaults to true
+    /// Does this room show in the lobby
+    is_visible: bool, // defaults to true
+    /// Current players in the room
+    player_count: u8,
+    cleanup_cache_on_leave: bool, // defaults to true
+    master_client_id: Option<i32>,
+    custom_properties_lobby: Vec<&'a str>,
+    expected_users: Vec<&'a str>,
+    empty_room_ttl: i32,
+    player_ttl: i32,
+
+    /// all other string-indexed properties
+    custom_properties: HashMap<&'a str, ProtocolValue<'a>>,
+}
+
+// Used in CreateGame, JoinGame and JoinRandomGame
+/// Info used when creating a room or when filtering. Very similar to `RoomInfo`
+#[derive(Debug, PartialEq)]
+pub struct RoomOptions<'a> {
+    /// Max players that fit in this room. 0 for unlimited.
+    max_players: u8,
+    /// Allow other players to join
+    is_open: bool,
+    /// Does this room show in the lobby
+    is_visible: bool,
+    /// Should be the same as the parent!
+    cleanup_cache_on_leave: bool, // included if false, but always included in parent
+    custom_properties_lobby: Vec<&'a str>, // always present, even if empty
+
+    /// all other string-indexed properties
+    custom_properties: HashMap<&'a str, ProtocolValue<'a>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct GameProperties<'a> {
-    // shared with GameInfo, names are contained in props_listed_in_lobby
-    game_id: &'a str,
-    room_id: &'a str,
-    store_id: &'a str,
-    room_name: &'a str,
-    mode_name: &'a str,
-    password: &'a str,
-    map_name: &'a str,
-    match_started: bool,
-    switching_map: bool,
-    room_type: u8,
-    dedicated: bool,
-    hardcore: bool,
-    allowed_weapons: u64,
-    mean_rank: either::Either<i32, f32>,
-    mean_kd: f32,
-    average_rank: i32,
-    event_code: i32,
+pub struct Player<'a> {
+    name: Option<&'a str>,
+    user_id: Option<&'a str>,
+    is_inactive: Option<bool>,
 
-    // exclusive for GameProperties
-    spectate_for_mods_only: bool,
-    max_ping: i16,
-    banned_weapon_message: &'a str,
-    time_scale: f32,
-    match_countdown_time: f32,
-    round_started: bool,
-    score_limit: i32,
-    gun_game_preset: i32,
-
-    // options below not present in Operation::SetProperties
-    cleanup_cache_on_leave: Option<bool>, // 249
-    /// List of some fields that are present in this struct, which don't seem to be present in GameInfo
-    props_listed_in_lobby: Option<Vec<&'a str>>, // 250
-    is_open: Option<bool>,                // 253
-    /// Is room visible in lobby
-    is_visible: Option<bool>, // 254
-    max_players: Option<u8>,              // 255
-    /// Only present in Operation::CreateGame* response
-    master_client_id: Option<i32>, // 248
+    /// all other string-indexed properties
+    custom_properties: HashMap<&'a str, ProtocolValue<'a>>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum PlayerProperties<'a> {
-    NameOnly(&'a str),
+bitflags! {
+    pub struct RoomOptionsFlags: u32 {
+        const NONE = 0;
+        /// toggles a check of the UserId when joining (enabling returning to a game)
+        const CHECK_USER_ON_JOIN = 0x01;
+        /// deletes cache on leave
+        const DELETE_CACHE_ON_LEAVE = 0x02;
+        /// suppresses all room events
+        const SUPPRESS_ROOM_EVENTS = 0x04;
+        /// signals that we should publish userId
+        const PUBLISH_USER_ID = 0x08;
+        /// signals that we should remove property if its value was set to null. see RoomOption to Delete Null Properties
+        const DELETE_NULL_PROPS = 0x10;
+        /// signals that we should send PropertyChanged event to all room players including initiator
+        const BROADCAST_PROPS_CHANGE_TO_ALL = 0x20;
+    }
 }
 
 // This would be an enum, but Rust does not allow multiple enum members with the same value
@@ -251,6 +307,7 @@ pub mod ParameterCode {
     pub const EncryptionMode: u8 = 193;
     pub const CustomInitData: u8 = 194;
     pub const ExpectedProtocol: u8 = 195;
+    pub const Cluster: u8 = 196;
     pub const PluginVersion: u8 = 200;
     pub const PluginName: u8 = 201;
     pub const NickName: u8 = 202;
@@ -311,4 +368,58 @@ pub mod ParameterCode {
     pub const TargetActorNr: u8 = 253;
     pub const ActorNr: u8 = 254;
     pub const RoomName: u8 = 255;
+}
+
+// TODO: check if enum is better
+#[allow(dead_code, non_upper_case_globals, non_snake_case)]
+pub mod GamePropertyKey {
+    pub const MaxPlayers: u8 = 255;
+    pub const IsVisible: u8 = 254;
+    pub const IsOpen: u8 = 253;
+    pub const PlayerCount: u8 = 252;
+    pub const Removed: u8 = 251;
+    pub const PropsListedInLobby: u8 = 250;
+    pub const CleanupCacheOnLeave: u8 = 249;
+    pub const MasterClientId: u8 = 248;
+    pub const ExpectedUsers: u8 = 247;
+    pub const PlayerTtl: u8 = 246;
+    pub const EmptyRoomTtl: u8 = 245;
+}
+
+#[allow(dead_code, non_upper_case_globals, non_snake_case)]
+pub mod ActorProperties {
+    pub const PlayerName: u8 = 255;
+    pub const IsInactive: u8 = 254;
+    pub const UserId: u8 = 253;
+}
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
+pub enum EventCaching {
+    DoNotCache = 0,
+    /// obsolete
+    MergeCache = 1,
+    /// obsolete
+    ReplaceCache = 2,
+    /// obsolete
+    RemoveCache = 3,
+    AddToRoomCache = 4,
+    AddToRoomCacheGlobal = 5,
+    RemoveFromRoomCache = 6,
+    RemoveFromRoomCacheForActorsLeft = 7,
+    SliceIncreaseIndex = 10,
+    SliceSetIndex = 11,
+    SlicePurgeIndex = 12,
+    SlicePurgeUpToIndex = 13,
+}
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Debug, PartialEq, FromPrimitive)]
+pub enum ReceiverGroup {
+    /// For everyone
+    Others = 0,
+    /// For everone including me
+    All = 1,
+    /// Only to master client (lowest actor nr)
+    MasterClient = 2,
 }

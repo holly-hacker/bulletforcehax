@@ -1,272 +1,199 @@
 use super::macros::*;
 use super::*;
-use either::Either;
-use log::warn;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-impl<'s> GameInfo<'s> {
+impl<'s> RoomInfo<'s> {
     pub fn try_from_hashtable_table<'a>(
         big_table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
-    ) -> PacketReadResult<HashMap<&'a str, Option<GameInfo<'a>>>> {
-        let mut map: HashMap<&'a str, Option<GameInfo<'a>>> = HashMap::new();
+    ) -> PacketReadResult<HashMap<&'a str, Option<RoomInfo<'a>>>> {
+        let mut map: HashMap<&'a str, Option<RoomInfo<'a>>> = HashMap::new();
         for (key, value) in big_table {
             // could look into getting map past the borrow checker
             let ht = unwrap_protocol_hashtable(value)?;
-            let val = GameInfo::try_from_hashtable(ht)?;
+            let val = RoomInfo::try_from_hashtable(ht)?;
             map.insert(unwrap_protocol_string(key)?, val);
         }
 
         Ok(map)
     }
 
-    pub fn try_from_hashtable(table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Option<GameInfo<'s>>> {
-        if table.contains_key(&ProtocolValue::Byte(251)) {
+    pub fn try_from_hashtable(table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Option<RoomInfo<'s>>> {
+        if table.contains_key(&ProtocolValue::Byte(GamePropertyKey::Removed)) {
             // got removed
             return Ok(None);
         }
 
-        Some(GameInfo::try_from(table)).transpose()
+        Some(RoomInfo::try_from(table)).transpose()
     }
 }
 
-impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for RoomInfo<'s> {
     type Error = PacketReadError;
 
-    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameInfo<'s>> {
-        let ret = Ok(GameInfo {
-            game_id: get_protocol_string(&mut table, ProtocolValue::String("gameID"))?,
-            room_id: get_protocol_string(&mut table, ProtocolValue::String("roomID"))?,
-            store_id: get_protocol_string(&mut table, ProtocolValue::String("storeID"))?,
-            room_name: get_protocol_string(&mut table, ProtocolValue::String("roomName"))?,
-            mode_name: get_protocol_string(&mut table, ProtocolValue::String("modeName"))?,
-            password: get_protocol_string(&mut table, ProtocolValue::String("password"))?,
-            map_name: get_protocol_string(&mut table, ProtocolValue::String("mapName"))?,
-            match_started: get_protocol_bool(&mut table, ProtocolValue::String("matchStarted"))?,
-            switching_map: get_protocol_bool(&mut table, ProtocolValue::String("switchingmap"))?,
-            room_type: get_protocol_byte(&mut table, ProtocolValue::String("roomType"))?,
-            dedicated: get_protocol_bool(&mut table, ProtocolValue::String("dedicated"))?,
-            hardcore: get_protocol_bool(&mut table, ProtocolValue::String("hardcore"))?,
-            allowed_weapons: {
-                // this is an array of 2 u32s, but we save this as a u64 because it makes more sense
-                let mut arr = get_protocol_array(&mut table, ProtocolValue::String("allowedweapons"))?;
-                if arr.len() != 2 {
-                    return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
-                }
-                let int2 = unwrap_protocol_int(arr.remove(1))? as u32 as u64;
-                let int1 = unwrap_protocol_int(arr.remove(0))? as u32 as u64;
-                int1 | (int2 << 32)
-            },
-            mean_rank: get_protocol_int_or_float(&mut table, ProtocolValue::String("meanRank"))?,
-            mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
-            average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
-            event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
-            player_count: get_protocol_byte(&mut table, ProtocolValue::Byte(252))?,
-            is_open: get_protocol_bool(&mut table, ProtocolValue::Byte(253))?,
-            max_players: get_protocol_byte(&mut table, ProtocolValue::Byte(255))?,
-        });
+    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Self> {
+        Ok(RoomInfo {
+            max_players: get_protocol_byte_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::MaxPlayers))?.unwrap_or(0),
+            is_open: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::IsVisible))?.unwrap_or(true),
+            is_visible: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::IsOpen))?.unwrap_or(true),
+            player_count: get_protocol_byte_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::PlayerCount))?.unwrap_or(0),
+            cleanup_cache_on_leave: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::CleanupCacheOnLeave))?.unwrap_or(true),
+            master_client_id: get_protocol_int_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::MasterClientId))?,
+            custom_properties_lobby: get_protocol_array_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::PropsListedInLobby))?
+                .map(|arr| arr.into_iter().map(unwrap_protocol_string).collect())
+                .transpose()?
+                .unwrap_or_else(|| vec![]),
+            expected_users: get_protocol_array_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::ExpectedUsers))?
+                .map(|arr| arr.into_iter().map(unwrap_protocol_string).collect())
+                .transpose()?
+                .unwrap_or_else(|| vec![]),
+            empty_room_ttl: get_protocol_int_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::EmptyRoomTtl))?.unwrap_or(0),
+            player_ttl: get_protocol_int_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::PlayerTtl))?.unwrap_or(0),
 
-        if ret.is_ok() && !table.is_empty() {
-            warn!("Missed GameInfo parameters: {:#?}, obj is {:#?}", table, ret);
-        }
-
-        ret
+            // all remaining properties into custom_properties, assume they use string keys
+            // note: maybe I should make this return an error instead of panicking on non-string keys
+            custom_properties: table
+                .into_iter()
+                .map(|(key, value)| (unwrap_protocol_string(key).expect("Expected string key for custom_properties"), value))
+                .collect(),
+        })
     }
 }
 
-impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameInfo<'s> {
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for RoomInfo<'s> {
     fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
         let mut map = HashMap::new();
-        map.insert(ProtocolValue::String("gameID"), ProtocolValue::String(self.game_id));
-        map.insert(ProtocolValue::String("roomID"), ProtocolValue::String(self.room_id));
-        map.insert(ProtocolValue::String("storeID"), ProtocolValue::String(self.store_id));
-        map.insert(ProtocolValue::String("roomName"), ProtocolValue::String(self.room_name));
-        map.insert(ProtocolValue::String("modeName"), ProtocolValue::String(self.mode_name));
-        map.insert(ProtocolValue::String("password"), ProtocolValue::String(self.password));
-        map.insert(ProtocolValue::String("mapName"), ProtocolValue::String(self.map_name));
-        map.insert(ProtocolValue::String("matchStarted"), ProtocolValue::Bool(self.match_started));
-        map.insert(ProtocolValue::String("switchingmap"), ProtocolValue::Bool(self.switching_map));
-        map.insert(ProtocolValue::String("roomType"), ProtocolValue::Byte(self.room_type));
-        map.insert(ProtocolValue::String("dedicated"), ProtocolValue::Bool(self.dedicated));
-        map.insert(ProtocolValue::String("hardcore"), ProtocolValue::Bool(self.hardcore));
+        // TODO: don't write if default value
+        map.insert(ProtocolValue::Byte(GamePropertyKey::MaxPlayers), ProtocolValue::Byte(self.max_players));
+        map.insert(ProtocolValue::Byte(GamePropertyKey::IsVisible), ProtocolValue::Bool(self.is_open));
+        map.insert(ProtocolValue::Byte(GamePropertyKey::IsOpen), ProtocolValue::Bool(self.is_visible));
+        map.insert(ProtocolValue::Byte(GamePropertyKey::PlayerCount), ProtocolValue::Byte(self.player_count));
         map.insert(
-            ProtocolValue::String("allowedweapons"),
-            ProtocolValue::Array(vec![
-                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as i32),
-                ProtocolValue::Integer((self.allowed_weapons >> 32) as i32),
-            ]),
+            ProtocolValue::Byte(GamePropertyKey::CleanupCacheOnLeave),
+            ProtocolValue::Bool(self.cleanup_cache_on_leave),
         );
-        map.insert(
-            ProtocolValue::String("meanRank"),
-            match self.mean_rank {
-                Either::Left(x) => ProtocolValue::Integer(x),
-                Either::Right(x) => ProtocolValue::Float(x),
-            },
-        );
-        map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
-        map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
-        map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
-        map.insert(ProtocolValue::Byte(252), ProtocolValue::Byte(self.player_count));
-        map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(self.is_open));
-        map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(self.max_players));
-        map
-    }
-}
-
-impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<'s> {
-    type Error = PacketReadError;
-
-    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<GameProperties<'s>> {
-        let ret = Ok(GameProperties {
-            spectate_for_mods_only: get_protocol_bool(&mut table, ProtocolValue::String("spectateForModsOnly"))?,
-            max_ping: get_protocol_short(&mut table, ProtocolValue::String("maxPing"))?,
-            banned_weapon_message: get_protocol_string(&mut table, ProtocolValue::String("bannedweaponmessage"))?,
-            time_scale: get_protocol_float(&mut table, ProtocolValue::String("timeScale"))?,
-            match_countdown_time: get_protocol_float(&mut table, ProtocolValue::String("matchCountdownTime"))?,
-            round_started: get_protocol_bool(&mut table, ProtocolValue::String("roundStarted"))?,
-            score_limit: get_protocol_int(&mut table, ProtocolValue::String("scorelimit"))?,
-            gun_game_preset: get_protocol_int(&mut table, ProtocolValue::String("gunGamePreset"))?,
-            cleanup_cache_on_leave: get_protocol_bool(&mut table, ProtocolValue::Byte(249)).ok(),
-            props_listed_in_lobby: get_protocol_array(&mut table, ProtocolValue::Byte(250))
-                .and_then(|x| {
-                    Ok(x.into_iter()
-                        .map(|protocol_val| {
-                            unwrap_protocol_string(protocol_val).expect("Found non-string type in GameProperties::props_listed_in_lobby")
-                        })
-                        .collect())
-                })
-                .ok(),
-            is_open: get_protocol_bool(&mut table, ProtocolValue::Byte(253)).ok(),
-            is_visible: get_protocol_bool(&mut table, ProtocolValue::Byte(254)).ok(),
-            max_players: get_protocol_byte(&mut table, ProtocolValue::Byte(255)).ok(),
-            master_client_id: get_protocol_int(&mut table, ProtocolValue::Byte(248)).ok(), // could use direction to conditionally check for this
-            room_name: get_protocol_string(&mut table, ProtocolValue::String("roomName"))?,
-            map_name: get_protocol_string(&mut table, ProtocolValue::String("mapName"))?,
-            mode_name: get_protocol_string(&mut table, ProtocolValue::String("modeName"))?,
-            password: get_protocol_string(&mut table, ProtocolValue::String("password"))?,
-            hardcore: get_protocol_bool(&mut table, ProtocolValue::String("hardcore"))?,
-            dedicated: get_protocol_bool(&mut table, ProtocolValue::String("dedicated"))?,
-            match_started: get_protocol_bool(&mut table, ProtocolValue::String("matchStarted"))?,
-            mean_kd: get_protocol_float(&mut table, ProtocolValue::String("meanKD"))?,
-            mean_rank: get_protocol_int_or_float(&mut table, ProtocolValue::String("meanRank"))?,
-            room_type: get_protocol_byte(&mut table, ProtocolValue::String("roomType"))?,
-            switching_map: get_protocol_bool(&mut table, ProtocolValue::String("switchingmap"))?,
-            allowed_weapons: {
-                // this is an array of 2 u32s, but we save this as a u64 because it makes more sense
-                let mut arr = get_protocol_array(&mut table, ProtocolValue::String("allowedweapons"))?;
-                if arr.len() != 2 {
-                    return Err(PacketReadError::Other(format!("allowedweapons array was not 2 long, but {}", arr.len())));
-                }
-                let int2 = unwrap_protocol_int(arr.remove(1))? as u32 as u64;
-                let int1 = unwrap_protocol_int(arr.remove(0))? as u32 as u64;
-                int1 | (int2 << 32)
-            },
-            event_code: get_protocol_int(&mut table, ProtocolValue::String("eventcode"))?,
-            average_rank: get_protocol_int(&mut table, ProtocolValue::String("averagerank"))?,
-            game_id: get_protocol_string(&mut table, ProtocolValue::String("gameID"))?,
-            room_id: get_protocol_string(&mut table, ProtocolValue::String("roomID"))?,
-            store_id: get_protocol_string(&mut table, ProtocolValue::String("storeID"))?,
-        });
-
-        if ret.is_ok() && !table.is_empty() {
-            warn!("Missed GameProperties parameters: {:#?}, obj is {:#?}", table, ret);
-        }
-
-        ret
-    }
-}
-
-impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for GameProperties<'s> {
-    fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
-        let mut map = HashMap::new();
-        map.insert(
-            ProtocolValue::String("spectateForModsOnly"),
-            ProtocolValue::Bool(self.spectate_for_mods_only),
-        );
-        map.insert(ProtocolValue::String("maxPing"), ProtocolValue::Short(self.max_ping));
-        map.insert(
-            ProtocolValue::String("bannedweaponmessage"),
-            ProtocolValue::String(self.banned_weapon_message),
-        );
-        map.insert(ProtocolValue::String("timeScale"), ProtocolValue::Float(self.time_scale));
-        map.insert(
-            ProtocolValue::String("matchCountdownTime"),
-            ProtocolValue::Float(self.match_countdown_time),
-        );
-        map.insert(ProtocolValue::String("roundStarted"), ProtocolValue::Bool(self.round_started));
-        map.insert(ProtocolValue::String("scorelimit"), ProtocolValue::Integer(self.score_limit));
-        map.insert(ProtocolValue::String("gunGamePreset"), ProtocolValue::Integer(self.gun_game_preset));
-        self.cleanup_cache_on_leave
-            .and_then(|b| map.insert(ProtocolValue::Byte(249), ProtocolValue::Bool(b)));
-        self.props_listed_in_lobby.and_then(|b| {
-            map.insert(
-                ProtocolValue::Byte(250),
-                ProtocolValue::Array(b.into_iter().map(|s| ProtocolValue::String(s)).collect()),
-            )
-        });
-        self.is_open.and_then(|b| map.insert(ProtocolValue::Byte(253), ProtocolValue::Bool(b)));
-        self.is_visible.and_then(|b| map.insert(ProtocolValue::Byte(254), ProtocolValue::Bool(b)));
-        self.max_players
-            .and_then(|b| map.insert(ProtocolValue::Byte(255), ProtocolValue::Byte(b)));
         self.master_client_id
-            .and_then(|b| map.insert(ProtocolValue::Byte(248), ProtocolValue::Integer(b)));
-        map.insert(ProtocolValue::String("roomName"), ProtocolValue::String(self.room_name));
-        map.insert(ProtocolValue::String("mapName"), ProtocolValue::String(self.map_name));
-        map.insert(ProtocolValue::String("modeName"), ProtocolValue::String(self.mode_name));
-        map.insert(ProtocolValue::String("password"), ProtocolValue::String(self.password));
-        map.insert(ProtocolValue::String("hardcore"), ProtocolValue::Bool(self.hardcore));
-        map.insert(ProtocolValue::String("dedicated"), ProtocolValue::Bool(self.dedicated));
-        map.insert(ProtocolValue::String("matchStarted"), ProtocolValue::Bool(self.match_started));
-        map.insert(ProtocolValue::String("meanKD"), ProtocolValue::Float(self.mean_kd));
+            .and_then(|id| map.insert(ProtocolValue::Byte(GamePropertyKey::MasterClientId), ProtocolValue::Integer(id)));
+        if !self.custom_properties_lobby.is_empty() {
+            map.insert(
+                ProtocolValue::Byte(GamePropertyKey::PropsListedInLobby),
+                ProtocolValue::Array(self.custom_properties_lobby.into_iter().map(ProtocolValue::String).collect()),
+            );
+        }
+        if !self.expected_users.is_empty() {
+            map.insert(
+                ProtocolValue::Byte(GamePropertyKey::ExpectedUsers),
+                ProtocolValue::Array(self.expected_users.into_iter().map(ProtocolValue::String).collect()),
+            );
+        }
         map.insert(
-            ProtocolValue::String("meanRank"),
-            match self.mean_rank {
-                Either::Left(x) => ProtocolValue::Integer(x),
-                Either::Right(x) => ProtocolValue::Float(x),
-            },
+            ProtocolValue::Byte(GamePropertyKey::EmptyRoomTtl),
+            ProtocolValue::Integer(self.empty_room_ttl),
         );
-        map.insert(ProtocolValue::String("roomType"), ProtocolValue::Byte(self.room_type));
-        map.insert(ProtocolValue::String("switchingmap"), ProtocolValue::Bool(self.switching_map));
-        map.insert(
-            ProtocolValue::String("allowedweapons"),
-            ProtocolValue::Array(vec![
-                ProtocolValue::Integer((self.allowed_weapons & 0xFFFFFFFF) as i32),
-                ProtocolValue::Integer((self.allowed_weapons >> 32) as i32),
-            ]),
-        );
-        map.insert(ProtocolValue::String("eventcode"), ProtocolValue::Integer(self.event_code));
-        map.insert(ProtocolValue::String("averagerank"), ProtocolValue::Integer(self.average_rank));
-        map.insert(ProtocolValue::String("gameID"), ProtocolValue::String(self.game_id));
-        map.insert(ProtocolValue::String("roomID"), ProtocolValue::String(self.room_id));
-        map.insert(ProtocolValue::String("storeID"), ProtocolValue::String(self.store_id));
+        map.insert(ProtocolValue::Byte(GamePropertyKey::PlayerTtl), ProtocolValue::Integer(self.player_ttl));
+
+        // Add the remaining properties
+        let remaining: HashMap<ProtocolValue, ProtocolValue> = self
+            .custom_properties
+            .into_iter()
+            .map(|(key, value)| (ProtocolValue::String(key), value))
+            .collect();
+        map.extend(remaining);
         map
     }
 }
 
-impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProperties<'s> {
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for RoomOptions<'s> {
     type Error = PacketReadError;
 
-    fn try_from<'a>(mut table: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>) -> PacketReadResult<PlayerProperties<'a>> {
-        if table.len() != 1 || !table.contains_key(&ProtocolValue::Byte(255)) {
-            return Err(PacketReadError::Other("Full PlayerProperties not yet implemented!".to_string()));
-        }
-        let ret = Ok(PlayerProperties::NameOnly(get_protocol_string(&mut table, ProtocolValue::Byte(255))?));
+    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Self> {
+        Ok(RoomOptions {
+            max_players: get_protocol_byte_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::MaxPlayers))?.unwrap_or(0),
+            is_open: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::IsVisible))?.unwrap_or(true),
+            is_visible: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::IsOpen))?.unwrap_or(true),
+            cleanup_cache_on_leave: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::CleanupCacheOnLeave))?.unwrap_or(true),
+            custom_properties_lobby: get_protocol_array_opt(&mut table, ProtocolValue::Byte(GamePropertyKey::PropsListedInLobby))?
+                .map(|arr| arr.into_iter().map(unwrap_protocol_string).collect())
+                .transpose()?
+                .unwrap_or_else(|| vec![]),
 
-        // can't be hit, actually
-        if ret.is_ok() && !table.is_empty() {
-            warn!("Missed PlayerProperties parameters: {:#?}, obj is {:#?}", table, ret);
-        }
-
-        ret
+            // all remaining properties into custom_properties, assume they use string keys
+            // note: maybe I should make this return an error instead of panicking on non-string keys
+            custom_properties: table
+                .into_iter()
+                .map(|(key, value)| (unwrap_protocol_string(key).expect("Expected string key for custom_properties"), value))
+                .collect(),
+        })
     }
 }
 
-impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for PlayerProperties<'s> {
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for RoomOptions<'s> {
     fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
         let mut map = HashMap::new();
-        match self {
-            PlayerProperties::NameOnly(name) => map.insert(ProtocolValue::Byte(255), ProtocolValue::String(name)),
-        };
+        // TODO: don't write if default value
+        if self.max_players != 0 {
+            map.insert(ProtocolValue::Byte(GamePropertyKey::MaxPlayers), ProtocolValue::Byte(self.max_players));
+        }
+        map.insert(ProtocolValue::Byte(GamePropertyKey::IsVisible), ProtocolValue::Bool(self.is_open));
+        map.insert(ProtocolValue::Byte(GamePropertyKey::IsOpen), ProtocolValue::Bool(self.is_visible));
+        map.insert(
+            ProtocolValue::Byte(GamePropertyKey::CleanupCacheOnLeave),
+            ProtocolValue::Bool(self.cleanup_cache_on_leave),
+        );
+        map.insert(
+            ProtocolValue::Byte(GamePropertyKey::PropsListedInLobby),
+            ProtocolValue::Array(self.custom_properties_lobby.into_iter().map(ProtocolValue::String).collect()),
+        );
+
+        // Add the remaining properties
+        let remaining: HashMap<ProtocolValue, ProtocolValue> = self
+            .custom_properties
+            .into_iter()
+            .map(|(key, value)| (ProtocolValue::String(key), value))
+            .collect();
+        map.extend(remaining);
+        map
+    }
+}
+
+impl<'s> TryFrom<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for Player<'s> {
+    type Error = PacketReadError;
+
+    fn try_from(mut table: HashMap<ProtocolValue<'s>, ProtocolValue<'s>>) -> PacketReadResult<Self> {
+        Ok(Player {
+            name: get_protocol_string_opt(&mut table, ProtocolValue::Byte(ActorProperties::PlayerName))?,
+            user_id: get_protocol_string_opt(&mut table, ProtocolValue::Byte(ActorProperties::UserId))?,
+            is_inactive: get_protocol_bool_opt(&mut table, ProtocolValue::Byte(ActorProperties::IsInactive))?,
+
+            // all remaining properties into custom_properties, assume they use string keys
+            // note: maybe I should make this return an error instead of panicking on non-string keys
+            custom_properties: table
+                .into_iter()
+                .map(|(key, value)| (unwrap_protocol_string(key).expect("Expected string key for custom_properties"), value))
+                .collect(),
+        })
+    }
+}
+
+impl<'s> Into<HashMap<ProtocolValue<'s>, ProtocolValue<'s>>> for Player<'s> {
+    fn into(self) -> HashMap<ProtocolValue<'s>, ProtocolValue<'s>> {
+        let mut map = HashMap::new();
+
+        self.name
+            .and_then(|n| map.insert(ProtocolValue::Byte(ActorProperties::PlayerName), ProtocolValue::String(n)));
+        self.user_id
+            .and_then(|n| map.insert(ProtocolValue::Byte(ActorProperties::UserId), ProtocolValue::String(n)));
+        self.is_inactive
+            .and_then(|i| map.insert(ProtocolValue::Byte(ActorProperties::IsInactive), ProtocolValue::Bool(i)));
+
+        // Add the remaining properties
+        let remaining: HashMap<ProtocolValue, ProtocolValue> = self
+            .custom_properties
+            .into_iter()
+            .map(|(key, value)| (ProtocolValue::String(key), value))
+            .collect();
+        map.extend(remaining);
+
         map
     }
 }

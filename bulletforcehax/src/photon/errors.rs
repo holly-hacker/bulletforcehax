@@ -15,7 +15,6 @@ pub enum PacketReadError {
     CouldNotFindKey(u8),
     CouldNotFindKeyProtocolValue(ProtocolValue<'static>),
     PhotonError(PhotonReadError),
-    Other(String),
 }
 
 impl From<PhotonReadError> for PacketReadError {
