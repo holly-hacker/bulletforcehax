@@ -19,6 +19,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
+          args: --manifest-path bulletforcehax/libs/photon_core/Cargo.toml
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path bulletforcehax/libs/photon/Cargo.toml
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
           args: --manifest-path bulletforcehax/Cargo.toml
 
   test:
@@ -31,6 +39,14 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path bulletforcehax/libs/photon_core/Cargo.toml
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path bulletforcehax/libs/photon/Cargo.toml
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -50,6 +66,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
+          args: --all --manifest-path bulletforcehax/libs/photon_core/Cargo.toml -- --check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all --manifest-path bulletforcehax/libs/photon/Cargo.toml -- --check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
           args: --all --manifest-path bulletforcehax/Cargo.toml -- --check
 
   clippy:
@@ -63,6 +87,14 @@ jobs:
           toolchain: stable
           override: true
       - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path bulletforcehax/libs/photon_core/Cargo.toml -- -D warnings
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path bulletforcehax/libs/photon/Cargo.toml -- -D warnings
       - uses: actions-rs/cargo@v1
         with:
           command: clippy

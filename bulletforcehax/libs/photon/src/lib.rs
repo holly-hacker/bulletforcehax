@@ -2,8 +2,8 @@ use bitflags::bitflags;
 use num_derive::FromPrimitive;
 use std::collections::HashMap;
 
-pub use super::photon_core::ProtocolValue;
-use super::photon_core::*;
+pub use photon_core::ProtocolValue;
+use photon_core::*;
 
 mod errors;
 pub use errors::*;

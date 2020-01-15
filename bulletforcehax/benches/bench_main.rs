@@ -1,5 +1,5 @@
-use bulletforcehax::photon_core::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use photon_core::*;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 

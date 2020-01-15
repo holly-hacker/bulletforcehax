@@ -1,0 +1,10 @@
+[package]
+name = "photon_core"
+version = "0.1.0"
+authors = ["HoLLy"]
+edition = "2018"
+
+[dependencies]
+byteorder = "1.3"
+maplit = "1"
+paste = "0.1"

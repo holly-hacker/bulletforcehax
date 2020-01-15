@@ -7,8 +7,6 @@ extern crate wasm_bindgen;
 use log::{debug, error, info, Level};
 use wasm_bindgen::prelude::*;
 
-mod photon;
-pub mod photon_core;
 use photon::{Direction, Packet};
 
 #[wasm_bindgen]

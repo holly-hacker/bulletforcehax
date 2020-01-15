@@ -15,7 +15,7 @@ type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 /// ## Serializing a packet
 /// ```rust
 /// # use std::collections::HashMap;
-/// # use bulletforcehax::photon_core::*;
+/// # use photon_core::*;
 /// # use std::convert::TryInto;
 /// let mut params = HashMap::new();
 /// params.insert(0x42, ProtocolValue::Float(13.37));
@@ -28,7 +28,7 @@ type ParameterTable<'a> = HashMap<u8, ProtocolValue<'a>>;
 /// ## Deserializing a packet
 /// ```rust
 /// # use std::collections::HashMap;
-/// # use bulletforcehax::photon_core::*;
+/// # use photon_core::*;
 /// # use std::convert::TryFrom;
 /// let bytes = vec![0xF3, 0x02, 0x20, 0, 0x01, 0x42, 0x66, 0x41, 0x55, 0xeb, 0x85];
 /// let packet = PhotonPacket::try_from(bytes.as_slice()).expect("Deserializing failed");

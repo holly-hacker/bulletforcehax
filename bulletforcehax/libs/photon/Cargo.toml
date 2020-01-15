@@ -1,0 +1,14 @@
+[package]
+name = "photon"
+version = "0.1.0"
+authors = ["HoLLy"]
+edition = "2018"
+
+[dependencies]
+photon_core = { path = "../photon_core" }
+log = "0.4"
+bitflags = "1.2"
+num-traits = "0.2"
+num-derive = "0.3"
+maplit = "1"
+paste = "0.1"

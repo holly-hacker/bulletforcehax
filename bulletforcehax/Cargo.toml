@@ -8,16 +8,12 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+photon_core = { path = "libs/photon_core" }
+photon = { path = "libs/photon" }
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1.6"
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_info"] }
 console_log = "0.1.2"
-byteorder = "1.3"
-maplit = "1"
-paste = "0.1"
-bitflags = "1.2"
-num-traits = "0.2"
-num-derive = "0.3"
 
 [dev-dependencies]
 criterion = "0.3"
