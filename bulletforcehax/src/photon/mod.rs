@@ -162,6 +162,8 @@ pub enum Operation<'a> {
         /// Only on MasterServer
         encryption_data: Option<HashMap<u8, ProtocolValue<'a>>>, // probably not used in websocket connections
         custom_data: Option<HashMap<&'a str, ProtocolValue<'a>>>,
+        /// Unused field, here for completeness. Seems to be 0 (meaning no waitlist to join?) for MasterServer
+        position: Option<i32>,
     },
     AuthenticateOnce,
     ChangeGroups,

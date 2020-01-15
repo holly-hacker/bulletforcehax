@@ -317,6 +317,7 @@ impl<'s> Operation<'s> {
                             .map(|(k, v)| (unwrap_protocol_string(k).expect("expected string keys in custom_data"), v))
                             .collect()
                     }),
+                    position: get_u8_int_opt(&mut params, ParameterCode::Position)?,
                 }),
             },
             231 => err(Operation::AuthenticateOnce, &params),
@@ -619,6 +620,7 @@ impl<'s> Operation<'s> {
                 nickname,
                 encryption_data,
                 custom_data,
+                position,
             } => Ok({
                 let mut map = hashmap!();
                 user_id.and_then(|d| map.insert(ParameterCode::UserId, ProtocolValue::String(d)));
@@ -635,6 +637,7 @@ impl<'s> Operation<'s> {
                         ProtocolValue::Hashtable(d.into_iter().map(|(k, v)| (ProtocolValue::String(k), v)).collect()),
                     )
                 });
+                position.and_then(|p| map.insert(ParameterCode::Position, ProtocolValue::Integer(p)));
                 map
             }),
             Operation::AuthenticateOnce => err(Operation::AuthenticateOnce),

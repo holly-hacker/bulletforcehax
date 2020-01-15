@@ -13,9 +13,19 @@ macro_rules! gen_test {
             let data = $data;
             let expected = $unpacked;
 
-            let packet = Packet::read(data.as_slice(), $direction).unwrap();
+            let packet = Packet::read(data.as_slice(), $direction).expect("Failure while reading packet from bytes");
 
             assert_eq!(packet, expected);
+
+            // now test if serializing and deserializing it gives the original value again
+            let serialized_expected = expected.into_vec().expect("Failure while turning packet back into bytes");
+            assert_eq!(
+                $data.len(),
+                serialized_expected.len(),
+                "Expected original bytes to have same length as serialized packet. You probably missed some data."
+            );
+            let new_expected = Packet::read(serialized_expected.as_slice(), $direction).expect("Failure while reading serialized packet back");
+            assert_eq!(new_expected, $unpacked, "Deserialized packet differs from expected packet");
         }
     };
 }
@@ -158,7 +168,8 @@ gen_test!(
             user_id: None,
             nickname: None,
             encryption_data: None,
-            custom_data: None
+            custom_data: None,
+            position: Some(0),
         },
         return_code: 0,
         debug_string: None,
@@ -200,7 +211,8 @@ gen_test!(
             user_id: None,
             nickname: None,
             encryption_data: None,
-            custom_data: None
+            custom_data: None,
+            position: None,
         },
         return_code: 0,
         debug_string: None,
