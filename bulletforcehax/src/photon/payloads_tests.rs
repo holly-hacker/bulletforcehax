@@ -1,35 +1,28 @@
 #![cfg(test)]
 
-// TODO: fix tests
-/*
 use super::*;
-use either::Either;
+use maplit::hashmap;
 use std::convert::TryFrom;
 
 #[test]
-fn test_game_info() {
+fn test_room_info() {
     fn gen<'a>() -> RoomInfo<'a> {
         RoomInfo {
-            game_id: "game id",
-            room_id: "room id",
-            store_id: "store id",
-            room_name: "room name",
-            mode_name: "mode name",
-            password: "password",
-            map_name: "map name",
-            match_started: true,
-            switching_map: false,
-            room_type: 2,
-            dedicated: false,
-            hardcore: false,
-            allowed_weapons: 0x1234567890ABCDEF,
-            mean_rank: Either::Right(12.34),
-            mean_kd: 2.,
-            average_rank: 1337,
-            event_code: 0,
+            max_players: 12,
             is_open: false,
-            max_players: 2,
-            player_count: 1,
+            is_visible: true,
+            player_count: 0,
+            cleanup_cache_on_leave: true,
+            master_client_id: Some(1),
+            custom_properties_lobby: vec!["test", "test2", "test3"],
+            expected_users: vec![],
+            empty_room_ttl: 0,
+            player_ttl: 0,
+            custom_properties: hashmap! {
+                "test" => ProtocolValue::Integer(1),
+                "test2" => ProtocolValue::Null(),
+                "test3" => ProtocolValue::String("abc"),
+            },
         }
     }
 
@@ -42,41 +35,19 @@ fn test_game_info() {
 }
 
 #[test]
-fn test_game_properties() {
-    fn gen<'a>() -> GameProperties<'a> {
-        GameProperties {
-            game_id: "game id",
-            room_id: "room id",
-            store_id: "store id",
-            room_name: "room name",
-            mode_name: "mode name",
-            password: "password",
-            map_name: "map name",
-            match_started: true,
-            switching_map: false,
-            room_type: 2,
-            dedicated: false,
-            hardcore: false,
-            allowed_weapons: 0x1234567890ABCDEF,
-            mean_rank: Either::Left(12),
-            mean_kd: 2.,
-            average_rank: 1337,
-            event_code: 0,
-            is_open: Some(false),
-            max_players: Some(2),
-
-            spectate_for_mods_only: false,
-            max_ping: 123,
-            banned_weapon_message: "Banned message",
-            time_scale: 1.,
-            match_countdown_time: 10.,
-            round_started: false,
-            score_limit: 123,
-            gun_game_preset: 2,
-            cleanup_cache_on_leave: Some(false),
-            props_listed_in_lobby: Some(vec!["1", "2", "", "asd"]),
-            is_visible: Some(true),
-            master_client_id: None,
+fn test_room_options() {
+    fn gen<'a>() -> RoomOptions<'a> {
+        RoomOptions {
+            max_players: 12,
+            is_open: false,
+            is_visible: true,
+            cleanup_cache_on_leave: true,
+            custom_properties_lobby: vec!["test", "test2", "test3"],
+            custom_properties: hashmap! {
+                "test" => ProtocolValue::Integer(1),
+                "test2" => ProtocolValue::Null(),
+                "test3" => ProtocolValue::String("abc"),
+            },
         }
     }
 
@@ -84,21 +55,27 @@ fn test_game_properties() {
     let info_clone = gen();
 
     let ht: HashMap<ProtocolValue, ProtocolValue> = info.into();
-    let info_new = GameProperties::try_from(ht).unwrap();
+    let info_new = RoomOptions::try_from(ht).unwrap();
     assert_eq!(info_clone, info_new);
 }
 
 #[test]
-fn test_player_properties() {
-    fn gen<'a>() -> PlayerProperties<'a> {
-        PlayerProperties::NameOnly("Test")
+fn test_player() {
+    fn gen<'a>() -> Player<'a> {
+        Player {
+            name: Some("Jeffrey"),
+            user_id: Some("abc-def-ghi"),
+            is_inactive: None,
+            custom_properties: hashmap! {
+                "is_cool" => ProtocolValue::Bool(true),
+            },
+        }
     }
 
     let info = gen();
     let info_clone = gen();
 
     let ht: HashMap<ProtocolValue, ProtocolValue> = info.into();
-    let info_new = PlayerProperties::try_from(ht).unwrap();
+    let info_new = Player::try_from(ht).unwrap();
     assert_eq!(info_clone, info_new);
 }
-*/
