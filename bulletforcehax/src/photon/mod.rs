@@ -11,8 +11,9 @@ mod macros;
 mod packets_impl;
 mod payloads_impl;
 mod payloads_tests;
+mod tests;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Packet<'a> {
     OperationRequest(Operation<'a>),
     OperationResponse {
@@ -30,7 +31,7 @@ pub enum Packet<'a> {
     InternalOperationResponse(InternalOperation, i16, Option<&'a str>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Event<'a> {
     /// Only when hosted with Azure, now obsolete
     AzureNodeInfo,
@@ -66,7 +67,7 @@ pub enum Event<'a> {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Operation<'a> {
     /// Used to get game list with SQL filter
     GetGameList,
@@ -211,9 +212,10 @@ pub enum Operation<'a> {
     Join,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InternalOperation {
     InitEncryption, // TODO: has property public_key
+    // TODO: server_time and local_time should be u32
     PingRequest { local_time: i32 },
     PingResponse { local_time: i32, server_time: i32 },
 }
