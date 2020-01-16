@@ -3,6 +3,7 @@ use super::*;
 pub type PhotonReadResult<T> = Result<T, PhotonReadError>;
 pub type PhotonWriteResult<T> = Result<T, PhotonWriteError>;
 
+/// An error during deserialization.
 #[derive(Debug)]
 pub enum PhotonReadError {
     InvalidMagic(u8),
@@ -28,6 +29,7 @@ impl From<std::str::Utf8Error> for PhotonReadError {
     }
 }
 
+/// An error during serialization.
 #[derive(Debug)]
 pub enum PhotonWriteError {
     UnimplementedProtocolValueType(ProtocolValue<'static>),
