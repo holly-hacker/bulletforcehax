@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 photon_core = { path = "../photon_core" }
+photon_derive = { path = "../photon_derive" }
 log = "0.4"
 bitflags = "1.2"
 num-traits = "0.2"

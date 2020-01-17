@@ -768,14 +768,6 @@ impl<'s> InternalOperation {
         ret
     }
 
-    pub fn get_type(&self) -> u8 {
-        match self {
-            InternalOperation::InitEncryption => 0,
-            InternalOperation::PingRequest { .. } => 1,
-            InternalOperation::PingResponse { .. } => 1,
-        }
-    }
-
     pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
         fn err<'a>(operation: InternalOperation) -> PacketWriteResult<HashMap<u8, ProtocolValue<'a>>> {
             Err(PacketWriteError::UnimplementedInternalOperationType(operation))

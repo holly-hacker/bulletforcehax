@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 pub use photon_core::ProtocolValue;
 use photon_core::*;
+use photon_derive::PacketTypeImpl;
 
 mod errors;
 pub use errors::*;
@@ -214,11 +215,14 @@ pub enum Operation<'a> {
     Join,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PacketTypeImpl)]
 pub enum InternalOperation {
+    #[packet_type(0)]
     InitEncryption, // TODO: has property public_key
     // TODO: server_time and local_time should be u32
+    #[packet_type(1)]
     PingRequest { local_time: i32 },
+    #[packet_type(1)]
     PingResponse { local_time: i32, server_time: i32 },
 }
 
