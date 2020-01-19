@@ -406,18 +406,15 @@ impl<'s> Operation<'s> {
                     );
                 }
 
-                if let Some(pp) = player_properties {
+                player_properties.map(|pp| {
                     let pp_map: HashMap<ProtocolValue, ProtocolValue> = pp.into();
                     if !pp_map.is_empty() {
                         map.insert(ParameterCode::PlayerProperties, ProtocolValue::Hashtable(pp_map));
                     }
-                }
+                });
                 broadcast
                     .filter(|b| *b)
                     .and_then(|_| map.insert(ParameterCode::Broadcast, ProtocolValue::Bool(true)));
-                if broadcast == Some(true) {
-                    map.insert(ParameterCode::Broadcast, ProtocolValue::Bool(true));
-                }
 
                 map.insert(ParameterCode::GameProperties, ProtocolValue::Hashtable(game_properties.into()));
                 if player_ttl > 0 || player_ttl == -1 {
