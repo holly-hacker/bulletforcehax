@@ -14,10 +14,3 @@ wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1.6"
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_info"] }
 console_log = "0.1.2"
-
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "bench_main"
-harness = false
