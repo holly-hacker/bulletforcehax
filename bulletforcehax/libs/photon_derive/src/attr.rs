@@ -1,15 +1,9 @@
-use super::utils::IterSingleExt;
-use syn::{AttrStyle, Attribute, Lit, Meta, NestedMeta};
+use syn::{spanned::Spanned, *};
 
-pub fn find_packet_type_attr(attrs: &Vec<Attribute>) -> Option<&Attribute> {
-    Some(attrs.iter().filter(is_packet_type_attr).single().expect("Couldn't find attribute"))
-}
+// TODO: return struct when we need to return multiple items
+pub fn get_packet_type_data(v: &Variant) -> Result<Lit> {
+    let attr = find_attr(v, "packet_type")?;
 
-fn is_packet_type_attr(attr: &&Attribute) -> bool {
-    attr.path.is_ident("packet_type") && attr.style == AttrStyle::Outer
-}
-
-pub fn get_packet_type_lit(attr: &Attribute) -> Lit {
     // pretty shitty and roundabout way of just getting the first literal
     if let Ok(meta) = attr.parse_meta() {
         match meta {
@@ -17,14 +11,32 @@ pub fn get_packet_type_lit(attr: &Attribute) -> Lit {
                 let nested = list.nested;
                 assert_eq!(nested.len(), 1, "Expected only 1 constant");
                 if let NestedMeta::Lit(lit) = nested.first().unwrap() {
-                    lit.to_owned()
+                    Ok(lit.to_owned())
                 } else {
-                    panic!("Expected literal");
+                    Err(Error::new(nested.span(), "Expected literal"))
                 }
             }
-            _ => panic!("Expected list"),
+            _ => Err(Error::new(meta.span(), "Expected list")),
         }
     } else {
-        panic!("Could not parse attribute parameters");
+        Err(Error::new(attr.span(), "Could not parse attribute parameters"))
+    }
+}
+
+/// Tries to find exactly 1 outer attribute matching `name`, otherwise returns `Error`
+pub fn find_attr<'a>(variant: &'a Variant, name: &'static str) -> Result<&'a Attribute> {
+    let mut iter = variant
+        .attrs
+        .iter()
+        .filter(|attr| attr.path.is_ident(name) && attr.style == AttrStyle::Outer);
+
+    if let Some(first) = iter.next() {
+        if let Some(_second) = iter.next() {
+            return Err(Error::new(variant.span(), format!("Found multiple {} attributes", name)));
+        } else {
+            Ok(first)
+        }
+    } else {
+        Err(Error::new(variant.span(), format!("Couldn't find {} attribute", name)))
     }
 }

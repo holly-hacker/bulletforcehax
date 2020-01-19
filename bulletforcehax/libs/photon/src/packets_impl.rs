@@ -119,24 +119,6 @@ impl<'s> Event<'s> {
         ret
     }
 
-    pub fn get_type(&self) -> u8 {
-        match self {
-            Event::AzureNodeInfo => 210,
-            Event::AuthEvent => 223,
-            Event::LobbyStats => 224,
-            Event::AppStats { .. } => 226,
-            Event::Match => 227,
-            Event::QueueState => 228,
-            Event::GameListUpdate(_) => 229,
-            Event::GameList(_) => 230,
-            Event::CacheSliceChanged => 250,
-            Event::ErrorInfo => 251,
-            Event::PropertiesChanged => 253,
-            Event::Leave => 254,
-            Event::Join { .. } => 255,
-        }
-    }
-
     pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {
         fn err(event: Event<'static>) -> PacketWriteResult<HashMap<u8, ProtocolValue>> {
             Err(PacketWriteError::UnimplementedEventType(event))
@@ -357,39 +339,6 @@ impl<'s> Operation<'s> {
         }
 
         ret
-    }
-
-    pub fn get_type(&self) -> u8 {
-        match self {
-            Operation::GetGameList => 217,
-            Operation::ServerSettings => 218,
-            Operation::WebRpc => 219,
-            Operation::GetRegions => 220,
-            Operation::GetLobbyStats => 221,
-            Operation::FindFriends => 222,
-            Operation::CancelJoinRandom => 224,
-            Operation::JoinRandomGame => 225,
-            Operation::JoinGame => 226,
-            Operation::CreateGameRequestMaster { .. } => 227,
-            Operation::CreateGameRequestGame { .. } => 227,
-            Operation::CreateGameResponseMaster { .. } => 227,
-            Operation::CreateGameResponseGame { .. } => 227,
-            Operation::LeaveLobby => 228,
-            Operation::JoinLobby() => 229,
-            Operation::AuthenticateRequestNoToken { .. } => 230,
-            Operation::AuthenticateRequestToken { .. } => 230,
-            Operation::AuthenticateResponseName { .. } => 230,
-            Operation::AuthenticateResponseMasterOrGame { .. } => 230,
-            Operation::AuthenticateOnce => 231,
-            Operation::ChangeGroups => 248,
-            Operation::ExchangeKeysForEncryption => 250,
-            Operation::GetProperties => 251,
-            Operation::SetPropertiesGame { .. } => 252,
-            Operation::SetPropertiesActor { .. } => 252,
-            Operation::RaiseEvent { .. } => 253,
-            Operation::Leave => 254,
-            Operation::Join => 255,
-        }
     }
 
     pub fn get_param_map(self) -> PacketWriteResult<HashMap<u8, ProtocolValue<'s>>> {

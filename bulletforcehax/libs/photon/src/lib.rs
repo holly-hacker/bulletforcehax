@@ -32,35 +32,48 @@ pub enum Packet<'a> {
     InternalOperationResponse(InternalOperation, i16, Option<&'a str>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PacketTypeImpl)]
 pub enum Event<'a> {
     /// Only when hosted with Azure, now obsolete
+    #[packet_type(210)]
     AzureNodeInfo,
     /// Sent to update token
+    #[packet_type(223)]
     AuthEvent,
     /// Contains list of lobbies with player and game counts
+    #[packet_type(224)]
     LobbyStats,
     /// Stats such as game, peer and master peer count. Sent every minute by master server.
+    #[packet_type(226)]
     AppStats {
         game_count: i32,
         peer_count: i32,
         master_peer_count: i32,
     },
     /// Unused
+    #[packet_type(227)]
     Match,
     /// Unused
+    #[packet_type(228)]
     QueueState,
     /// Initial game list. Contains all current games.
+    #[packet_type(230)]
     GameList(HashMap<&'a str, RoomInfo<'a>>),
     /// Update to game list. Contains `Option`s which are `None` if the game was removed, and `Some` if it was added or updated.
+    #[packet_type(229)]
     GameListUpdate(HashMap<&'a str, Option<RoomInfo<'a>>>),
+    #[packet_type(250)]
     CacheSliceChanged,
+    #[packet_type(251)]
     ErrorInfo,
     /// Used to update broadcasted properties
+    #[packet_type(253)]
     PropertiesChanged,
     /// Player leaves the game
+    #[packet_type(254)]
     Leave,
     /// Player joins the game. If `actor_nr` is 1, we may be creating the game.
+    #[packet_type(255)]
     Join {
         player_properties: Player<'a>,
         /// All players currently in the room, if this event is ours
@@ -68,22 +81,32 @@ pub enum Event<'a> {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PacketTypeImpl)]
 pub enum Operation<'a> {
     /// Used to get game list with SQL filter
+    #[packet_type(217)]
     GetGameList,
     /// Changes server settings
+    #[packet_type(218)]
     ServerSettings,
+    #[packet_type(219)]
     WebRpc,
     /// Gets a list of region servers
+    #[packet_type(220)]
     GetRegions,
+    #[packet_type(221)]
     GetLobbyStats,
     /// Request room and online status from friend by name
+    #[packet_type(222)]
     FindFriends,
+    #[packet_type(224)]
     CancelJoinRandom,
+    #[packet_type(225)]
     JoinRandomGame,
+    #[packet_type(226)]
     JoinGame,
     /// CreateGame on MasterServer
+    #[packet_type(227)]
     CreateGameRequestMaster {
         room_name: Option<&'a str>,   // can be null, not present then
         lobby_name: Option<&'a str>,  // if lobby not null and not default
@@ -91,6 +114,7 @@ pub enum Operation<'a> {
         expected_users: Vec<&'a str>, // not present if null or empty
     },
     /// CreateGame on GameServer, has extra options compared to `CreateGameRequestMaster`
+    #[packet_type(227)]
     CreateGameRequestGame {
         room_name: Option<&'a str>,   // can be null, not present then
         lobby_name: Option<&'a str>,  // if lobby not null and not default
@@ -109,11 +133,10 @@ pub enum Operation<'a> {
         room_option_flags: RoomOptionsFlags, // note: assuming always present,  so that other bool flags don't need to be present
     },
     /// CreateGame in MasterServer. The `Secret` variable is can be found in `OperationResponse`.
-    CreateGameResponseMaster {
-        room_name: Option<&'a str>,
-        address: &'a str,
-    },
+    #[packet_type(227)]
+    CreateGameResponseMaster { room_name: Option<&'a str>, address: &'a str },
     /// CreateGame on GameServer
+    #[packet_type(227)]
     CreateGameResponseGame {
         /// our actor number
         actor_nr: i32,
@@ -122,9 +145,12 @@ pub enum Operation<'a> {
         /// A list of all actors in the room.
         player_properties: HashMap<i32, Player<'a>>, // Should correspond to `actor_list`?
     },
+    #[packet_type(228)]
     LeaveLobby,
+    #[packet_type(229)]
     JoinLobby(),
     /// Full authentication request to request a token
+    #[packet_type(230)]
     AuthenticateRequestNoToken {
         lobby_stats: bool, // not present if false
         app_version: &'a str,
@@ -137,12 +163,14 @@ pub enum Operation<'a> {
         client_auth_data: Option<&'a str>, // can be empty
     },
     /// Authenticate if we already have a token. Since this is sent, `secret` is a payload parameter.
+    #[packet_type(230)]
     AuthenticateRequestToken {
         lobby_stats: bool, // not present if false
         secret: &'a str,
     },
     /// The Authenticate response on NameServer
     /// The `Secret` variable is can be found in `OperationResponse`.
+    #[packet_type(230)]
     AuthenticateResponseName {
         user_id: Option<&'a str>,
         nickname: Option<&'a str>,
@@ -155,6 +183,7 @@ pub enum Operation<'a> {
     },
     /// The Authenticate response on MasterServer or GameServer
     /// The `Secret` variable is can be found in `OperationResponse`.
+    #[packet_type(230)]
     AuthenticateResponseMasterOrGame {
         /// Only on MasterServer
         user_id: Option<&'a str>,
@@ -166,12 +195,17 @@ pub enum Operation<'a> {
         /// Unused field, here for completeness. Seems to be 0 (meaning no waitlist to join?) for MasterServer
         position: Option<i32>,
     },
+    #[packet_type(231)]
     AuthenticateOnce,
+    #[packet_type(248)]
     ChangeGroups,
+    #[packet_type(250)]
     ExchangeKeysForEncryption,
+    #[packet_type(251)]
     GetProperties,
     // send only
     // TODO: how to handle this? add fn to RoomInfo to apply this update?
+    #[packet_type(252)]
     SetPropertiesGame {
         /// The added/changed properties of this room
         properties: HashMap<ProtocolValue<'a>, ProtocolValue<'a>>,
@@ -181,6 +215,7 @@ pub enum Operation<'a> {
     },
     // send only
     // TODO: how to handle this? add fn to Player to apply this update?
+    #[packet_type(252)]
     SetPropertiesActor {
         /// The actor to update
         actor_nr: i32,
@@ -191,6 +226,7 @@ pub enum Operation<'a> {
         event_forward: bool, // not present if false
     },
     /// Raise an event for other actors in the room
+    #[packet_type(253)]
     RaiseEvent {
         /// The type of caching. If one of the following values, the other properties are `None`:
         /// - SliceSetIndex
@@ -211,7 +247,9 @@ pub enum Operation<'a> {
         /// Custom data associated to this event
         data: Option<ProtocolValue<'a>>,
     },
+    #[packet_type(254)]
     Leave,
+    #[packet_type(255)]
     Join,
 }
 
